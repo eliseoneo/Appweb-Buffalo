@@ -1,0 +1,26 @@
+{
+  "estadisticas": {
+    "totalConversaciones": 5678,
+    "conversacionesActivas": 56,
+    "satisfaccionPromedio": 4.2,
+    "tiempoRespuestaPromedio": "00:01:30",
+    "tasaResolucion": 0.85,
+    "canalesActivos": 3
+  },
+  "graficoBarras": [
+    {"mes": "Ene", "conversaciones": 300, "resueltas": 255},
+    {"mes": "Feb", "conversaciones": 350, "resueltas": 298},
+    {"mes": "Mar", "conversaciones": 280, "resueltas": 238},
+    {"mes": "Abr", "conversaciones": 400, "resueltas": 340}
+  ],
+  "graficoPie": [
+    {"canal": "WhatsApp", "valor": 2000, "porcentaje": 50.0},
+    {"canal": "Web Chat", "valor": 1500, "porcentaje": 37.5},
+    {"canal": "SMS", "valor": 500, "porcentaje": 12.5}
+  ],
+  "agentes": [
+    {"id": 1, "nombre": "Bot Principal", "conversaciones": 1200, "resolucion": 0.80, "satisfaccion": 4.1},
+    {"id": 2, "nombre": "Soporte Humano", "conversaciones": 800, "resolucion": 0.95, "satisfaccion": 4.6},
+    {"id": 3, "nombre": "Bot Ventas", "conversaciones": 600, "resolucion": 0.70, "satisfaccion": 3.9}
+  ]
+}

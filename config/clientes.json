@@ -1,0 +1,39 @@
+[
+  {
+    "id": "techcorp",
+    "nombre": "TechCorp Solutions",
+    "logo": "https://agenciabuffalo.es/wp-content/uploads/2025/09/descarga.png",
+    "color": "#0052cc",
+    "idioma": "es",
+    "modulos": ["dashboard", "llamadas", "texto", "automatizaciones", "incidencias", "campanas", "knowledge", "prueba", "buscar"],
+    "grupos": {
+      "Agentes de Llamadas": ["dashboard-llamadas", "prueba", "buscar", "campanas", "knowledge"],
+      "Agentes de Texto/Chat": ["dashboard-texto", "incidencias", "knowledge"],
+      "Automatizaciones Internas": ["dashboard-automatizaciones", "incidencias"]
+    }
+  },
+  {
+    "id": "startupx",
+    "nombre": "Startup X",
+    "logo": "https://agenciabuffalo.es/wp-content/uploads/2025/09/descarga.png",
+    "color": "#ff5733",
+    "idioma": "es",
+    "modulos": ["dashboard", "automatizaciones", "incidencias"],
+    "grupos": {
+      "Automatizaciones Internas": ["dashboard-automatizaciones", "incidencias"]
+    }
+  },
+  {
+    "id": "buffalo-demo",
+    "nombre": "Buffalo AI Demo",
+    "logo": "https://agenciabuffalo.es/wp-content/uploads/2025/09/descarga.png",
+    "color": "#00C896",
+    "idioma": "es",
+    "modulos": ["dashboard", "llamadas", "texto", "automatizaciones", "incidencias", "campanas", "knowledge", "prueba", "buscar"],
+    "grupos": {
+      "Agentes de Llamadas": ["dashboard-llamadas", "prueba", "buscar", "campanas", "knowledge"],
+      "Agentes de Texto/Chat": ["dashboard-texto", "incidencias", "knowledge"],
+      "Automatizaciones Internas": ["dashboard-automatizaciones", "incidencias"]
+    }
+  }
+]

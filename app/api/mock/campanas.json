@@ -1,0 +1,50 @@
+{
+  "campanas": [
+    {
+      "id": 1,
+      "nombre": "Campaña Q1 2024",
+      "tipo": "Email Marketing",
+      "estado": "Activa",
+      "fechaInicio": "2024-01-01",
+      "fechaFin": "2024-03-31",
+      "presupuesto": 50000,
+      "gastado": 32000,
+      "contactos": 10000,
+      "conversiones": 1500,
+      "roi": 3.2
+    },
+    {
+      "id": 2,
+      "nombre": "Lanzamiento Producto",
+      "tipo": "Social Media",
+      "estado": "Pausada",
+      "fechaInicio": "2024-02-15",
+      "fechaFin": "2024-04-15",
+      "presupuesto": 25000,
+      "gastado": 18000,
+      "contactos": 5000,
+      "conversiones": 800,
+      "roi": 2.8
+    },
+    {
+      "id": 3,
+      "nombre": "Retargeting Web",
+      "tipo": "Display Ads",
+      "estado": "Finalizada",
+      "fechaInicio": "2024-01-15",
+      "fechaFin": "2024-02-15",
+      "presupuesto": 15000,
+      "gastado": 15000,
+      "contactos": 3000,
+      "conversiones": 450,
+      "roi": 2.1
+    }
+  ],
+  "estadisticas": {
+    "totalCampanas": 3,
+    "campanasActivas": 1,
+    "presupuestoTotal": 90000,
+    "gastadoTotal": 65000,
+    "roiPromedio": 2.7
+  }
+}

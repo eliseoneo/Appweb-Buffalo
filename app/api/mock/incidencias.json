@@ -1,0 +1,44 @@
+{
+  "incidencias": [
+    {
+      "id": 1,
+      "titulo": "Error en sistema de pagos",
+      "descripcion": "Los usuarios no pueden procesar pagos con tarjeta de crédito",
+      "prioridad": "Alta",
+      "estado": "En Progreso",
+      "asignado": "Juan Pérez",
+      "fechaCreacion": "2024-01-15",
+      "fechaResolucion": null,
+      "categoria": "Técnica"
+    },
+    {
+      "id": 2,
+      "titulo": "Problema con notificaciones",
+      "descripcion": "Las notificaciones push no llegan a los usuarios",
+      "prioridad": "Media",
+      "estado": "Abierta",
+      "asignado": "María García",
+      "fechaCreacion": "2024-01-14",
+      "fechaResolucion": null,
+      "categoria": "Funcional"
+    },
+    {
+      "id": 3,
+      "titulo": "Lentitud en dashboard",
+      "descripcion": "El dashboard principal carga muy lento",
+      "prioridad": "Baja",
+      "estado": "Resuelta",
+      "asignado": "Carlos López",
+      "fechaCreacion": "2024-01-10",
+      "fechaResolucion": "2024-01-12",
+      "categoria": "Rendimiento"
+    }
+  ],
+  "estadisticas": {
+    "totalIncidencias": 3,
+    "abiertas": 2,
+    "enProgreso": 1,
+    "resueltas": 1,
+    "tiempoPromedioResolucion": "2.5 días"
+  }
+}

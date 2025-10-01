@@ -1,0 +1,27 @@
+{
+  "estadisticas": {
+    "totalLlamadas": 12345,
+    "llamadasActivas": 123,
+    "duracionPromedio": "00:02:45",
+    "sentimientoPromedio": "Positivo",
+    "tasaConversion": 0.15,
+    "satisfaccionPromedio": 4.2
+  },
+  "graficoLineal": [
+    {"fecha": "2024-01-01", "llamadas": 100, "conversiones": 15},
+    {"fecha": "2024-01-02", "llamadas": 120, "conversiones": 18},
+    {"fecha": "2024-01-03", "llamadas": 90, "conversiones": 12},
+    {"fecha": "2024-01-04", "llamadas": 150, "conversiones": 25},
+    {"fecha": "2024-01-05", "llamadas": 110, "conversiones": 16}
+  ],
+  "graficoDonut": [
+    {"sentimiento": "Positivo", "valor": 400, "porcentaje": 53.3},
+    {"sentimiento": "Neutral", "valor": 200, "porcentaje": 26.7},
+    {"sentimiento": "Negativo", "valor": 150, "porcentaje": 20.0}
+  ],
+  "agentes": [
+    {"id": 1, "nombre": "Ana García", "llamadas": 45, "conversion": 0.18, "satisfaccion": 4.5},
+    {"id": 2, "nombre": "Carlos López", "llamadas": 38, "conversion": 0.15, "satisfaccion": 4.2},
+    {"id": 3, "nombre": "María Rodríguez", "llamadas": 52, "conversion": 0.12, "satisfaccion": 4.0}
+  ]
+}

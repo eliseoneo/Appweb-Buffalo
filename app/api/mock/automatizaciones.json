@@ -1,0 +1,47 @@
+{
+  "automatizaciones": [
+    {
+      "id": 1,
+      "nombre": "Bienvenida Nuevos Usuarios",
+      "descripcion": "Envía email de bienvenida automático a nuevos registros",
+      "tipo": "Email",
+      "estado": "Activa",
+      "ultimaEjecucion": "2024-01-15 10:30:00",
+      "proximaEjecucion": "2024-01-16 10:30:00",
+      "ejecuciones": 1250,
+      "exitosas": 1200,
+      "fallidas": 50
+    },
+    {
+      "id": 2,
+      "nombre": "Recordatorio Pago",
+      "descripcion": "Envía recordatorio de pago 3 días antes del vencimiento",
+      "tipo": "Email",
+      "estado": "Activa",
+      "ultimaEjecucion": "2024-01-15 09:00:00",
+      "proximaEjecucion": "2024-01-16 09:00:00",
+      "ejecuciones": 850,
+      "exitosas": 820,
+      "fallidas": 30
+    },
+    {
+      "id": 3,
+      "nombre": "Backup Diario",
+      "descripcion": "Realiza backup automático de la base de datos",
+      "tipo": "Sistema",
+      "estado": "Pausada",
+      "ultimaEjecucion": "2024-01-14 02:00:00",
+      "proximaEjecucion": null,
+      "ejecuciones": 30,
+      "exitosas": 30,
+      "fallidas": 0
+    }
+  ],
+  "estadisticas": {
+    "totalAutomatizaciones": 3,
+    "activas": 2,
+    "pausadas": 1,
+    "ejecucionesTotales": 2130,
+    "tasaExito": 0.96
+  }
+}
