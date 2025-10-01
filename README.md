@@ -1,4 +1,4 @@
-# 🦬 Buffalo AI Dashboard
+# Appweb-Buffalo
 
 Sistema de gestión multi-tenant para Buffalo AI que permite gestionar múltiples clientes de forma centralizada.
 
@@ -32,7 +32,7 @@ Sistema de gestión multi-tenant para Buffalo AI que permite gestionar múltiple
 
 ```bash
 git clone <repository-url>
-cd buffalo-ai-dashboard
+cd appweb-buffalo
 ```
 
 ### 2. Instalar dependencias
