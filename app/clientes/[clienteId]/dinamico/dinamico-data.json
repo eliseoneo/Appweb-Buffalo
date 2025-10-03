@@ -1,10 +1,56 @@
 {
+  "pageConfig": {
+    "title": "Dashboard Dinámico",
+    "subtitle": "Métricas y Análisis en Tiempo Real",
+    "layout": "grid",
+    "theme": "modern",
+    "refreshInterval": 300000,
+    "maxSections": 10,
+    "showFilters": true,
+    "showRefreshButton": true,
+    "showAddButton": true,
+    "gridColumns": {
+      "mobile": 1,
+      "tablet": 2,
+      "desktop": 4
+    },
+    "chartGridColumns": {
+      "mobile": 1,
+      "tablet": 1,
+      "desktop": 2
+    },
+    "defaultColors": [
+      "#00bcd4",
+      "#22c55e",
+      "#f59e0b",
+      "#e53e3e",
+      "#3b82f6",
+      "#8b5cf6",
+      "#10b981",
+      "#f97316"
+    ],
+    "chartTypes": [
+      "line",
+      "bar",
+      "pie",
+      "area"
+    ]
+  },
   "sections": [
     {
       "id": "ventas",
       "title": "Métricas de Ventas",
       "description": "Análisis completo del rendimiento de ventas y conversiones",
       "lastUpdated": "2025-10-02T16:30:00Z",
+      "layout": {
+        "metricsPerRow": 4,
+        "chartLayout": "side-by-side",
+        "showDescription": true,
+        "showLastUpdated": true,
+        "backgroundColor": "#ffffff",
+        "borderColor": "#e5e7eb",
+        "accentColor": "#00bcd4"
+      },
       "metrics": [
         {
           "id": "ventas-totales",
@@ -61,7 +107,17 @@
             { "name": "Jun", "value": 125000 }
           ],
           "config": {
-            "color": "#00bcd4"
+            "color": "#00bcd4",
+            "height": 300,
+            "showGrid": true,
+            "showLegend": true,
+            "showTooltip": true,
+            "animation": true
+          },
+          "layout": {
+            "width": "100%",
+            "height": 300,
+            "responsive": true
           }
         },
         {

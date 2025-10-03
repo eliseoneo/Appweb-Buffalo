@@ -1,0 +1,376 @@
+{
+  "examples": {
+    "minimal": {
+      "pageConfig": {
+        "title": "Dashboard Minimalista",
+        "subtitle": "Vista simplificada",
+        "layout": "list",
+        "theme": "minimal",
+        "refreshInterval": 600000,
+        "maxSections": 5,
+        "showFilters": false,
+        "showRefreshButton": true,
+        "showAddButton": false,
+        "gridColumns": {
+          "mobile": 1,
+          "tablet": 2,
+          "desktop": 3
+        },
+        "chartGridColumns": {
+          "mobile": 1,
+          "tablet": 1,
+          "desktop": 1
+        }
+      },
+      "sections": [
+        {
+          "id": "kpis-principales",
+          "title": "KPIs Principales",
+          "description": "Métricas más importantes",
+          "lastUpdated": "2025-10-02T16:30:00Z",
+          "layout": {
+            "metricsPerRow": 3,
+            "chartLayout": "stacked",
+            "showDescription": false,
+            "showLastUpdated": false,
+            "backgroundColor": "#f8fafc",
+            "borderColor": "#e2e8f0",
+            "accentColor": "#3b82f6"
+          },
+          "metrics": [
+            {
+              "id": "ventas",
+              "name": "Ventas",
+              "value": 125000,
+              "unit": "€",
+              "trend": "up",
+              "change": 12.5,
+              "color": "#3b82f6",
+              "category": "revenue"
+            },
+            {
+              "id": "clientes",
+              "name": "Clientes",
+              "value": 1250,
+              "unit": "",
+              "trend": "up",
+              "change": 8.2,
+              "color": "#10b981",
+              "category": "customers"
+            },
+            {
+              "id": "satisfaccion",
+              "name": "Satisfacción",
+              "value": 4.6,
+              "unit": "/5",
+              "trend": "stable",
+              "change": 0,
+              "color": "#f59e0b",
+              "category": "quality"
+            }
+          ],
+          "charts": []
+        }
+      ]
+    },
+    "executive": {
+      "pageConfig": {
+        "title": "Dashboard Ejecutivo",
+        "subtitle": "Vista estratégica para directivos",
+        "layout": "grid",
+        "theme": "classic",
+        "refreshInterval": 300000,
+        "maxSections": 8,
+        "showFilters": true,
+        "showRefreshButton": true,
+        "showAddButton": true,
+        "gridColumns": {
+          "mobile": 1,
+          "tablet": 2,
+          "desktop": 4
+        },
+        "chartGridColumns": {
+          "mobile": 1,
+          "tablet": 1,
+          "desktop": 2
+        }
+      },
+      "sections": [
+        {
+          "id": "resumen-ejecutivo",
+          "title": "Resumen Ejecutivo",
+          "description": "Métricas clave para la toma de decisiones",
+          "lastUpdated": "2025-10-02T16:30:00Z",
+          "layout": {
+            "metricsPerRow": 4,
+            "chartLayout": "side-by-side",
+            "showDescription": true,
+            "showLastUpdated": true,
+            "backgroundColor": "#ffffff",
+            "borderColor": "#d1d5db",
+            "accentColor": "#1f2937"
+          },
+          "metrics": [
+            {
+              "id": "revenue",
+              "name": "Ingresos Totales",
+              "value": 2500000,
+              "unit": "€",
+              "trend": "up",
+              "change": 15.3,
+              "color": "#059669",
+              "category": "revenue"
+            },
+            {
+              "id": "profit-margin",
+              "name": "Margen de Beneficio",
+              "value": 23.5,
+              "unit": "%",
+              "trend": "up",
+              "change": 2.1,
+              "color": "#0d9488",
+              "category": "profitability"
+            },
+            {
+              "id": "market-share",
+              "name": "Cuota de Mercado",
+              "value": 12.8,
+              "unit": "%",
+              "trend": "up",
+              "change": 1.2,
+              "color": "#0891b2",
+              "category": "market"
+            },
+            {
+              "id": "customer-growth",
+              "name": "Crecimiento de Clientes",
+              "value": 18.7,
+              "unit": "%",
+              "trend": "up",
+              "change": 3.4,
+              "color": "#7c3aed",
+              "category": "growth"
+            }
+          ],
+          "charts": [
+            {
+              "id": "revenue-trend",
+              "title": "Tendencia de Ingresos",
+              "type": "line",
+              "data": [
+                { "name": "Q1", "value": 2100000 },
+                { "name": "Q2", "value": 2300000 },
+                { "name": "Q3", "value": 2400000 },
+                { "name": "Q4", "value": 2500000 }
+              ],
+              "config": {
+                "color": "#059669",
+                "height": 400,
+                "showGrid": true,
+                "showLegend": true,
+                "showTooltip": true,
+                "animation": true
+              },
+              "layout": {
+                "width": "100%",
+                "height": 400,
+                "responsive": true
+              }
+            },
+            {
+              "id": "market-distribution",
+              "title": "Distribución de Mercado",
+              "type": "pie",
+              "data": [
+                { "name": "Producto A", "value": 45, "color": "#059669" },
+                { "name": "Producto B", "value": 30, "color": "#0d9488" },
+                { "name": "Producto C", "value": 25, "color": "#0891b2" }
+              ],
+              "config": {
+                "height": 400
+              },
+              "layout": {
+                "width": "100%",
+                "height": 400,
+                "responsive": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "operational": {
+      "pageConfig": {
+        "title": "Dashboard Operacional",
+        "subtitle": "Métricas de operaciones diarias",
+        "layout": "card",
+        "theme": "modern",
+        "refreshInterval": 60000,
+        "maxSections": 12,
+        "showFilters": true,
+        "showRefreshButton": true,
+        "showAddButton": true,
+        "gridColumns": {
+          "mobile": 1,
+          "tablet": 3,
+          "desktop": 6
+        },
+        "chartGridColumns": {
+          "mobile": 1,
+          "tablet": 2,
+          "desktop": 3
+        }
+      },
+      "sections": [
+        {
+          "id": "operaciones-dia",
+          "title": "Operaciones del Día",
+          "description": "Métricas en tiempo real",
+          "lastUpdated": "2025-10-02T16:30:00Z",
+          "layout": {
+            "metricsPerRow": 6,
+            "chartLayout": "grid",
+            "showDescription": true,
+            "showLastUpdated": true,
+            "backgroundColor": "#fef3c7",
+            "borderColor": "#f59e0b",
+            "accentColor": "#d97706"
+          },
+          "metrics": [
+            {
+              "id": "tickets-abiertos",
+              "name": "Tickets Abiertos",
+              "value": 23,
+              "unit": "",
+              "trend": "down",
+              "change": -12.5,
+              "color": "#dc2626",
+              "category": "tickets"
+            },
+            {
+              "id": "tickets-resueltos",
+              "name": "Tickets Resueltos",
+              "value": 156,
+              "unit": "",
+              "trend": "up",
+              "change": 8.3,
+              "color": "#059669",
+              "category": "tickets"
+            },
+            {
+              "id": "tiempo-promedio",
+              "name": "Tiempo Promedio",
+              "value": 2.3,
+              "unit": "h",
+              "trend": "down",
+              "change": -15.2,
+              "color": "#0891b2",
+              "category": "performance"
+            },
+            {
+              "id": "satisfaccion",
+              "name": "Satisfacción",
+              "value": 4.7,
+              "unit": "/5",
+              "trend": "up",
+              "change": 0.2,
+              "color": "#7c3aed",
+              "category": "quality"
+            },
+            {
+              "id": "productividad",
+              "name": "Productividad",
+              "value": 89.2,
+              "unit": "%",
+              "trend": "up",
+              "change": 3.1,
+              "color": "#ea580c",
+              "category": "efficiency"
+            },
+            {
+              "id": "disponibilidad",
+              "name": "Disponibilidad",
+              "value": 99.8,
+              "unit": "%",
+              "trend": "stable",
+              "change": 0,
+              "color": "#0d9488",
+              "category": "reliability"
+            }
+          ],
+          "charts": [
+            {
+              "id": "tickets-tiempo",
+              "title": "Tickets por Hora",
+              "type": "bar",
+              "data": [
+                { "name": "08:00", "value": 12 },
+                { "name": "09:00", "value": 18 },
+                { "name": "10:00", "value": 25 },
+                { "name": "11:00", "value": 22 },
+                { "name": "12:00", "value": 15 },
+                { "name": "13:00", "value": 8 },
+                { "name": "14:00", "value": 20 },
+                { "name": "15:00", "value": 28 },
+                { "name": "16:00", "value": 24 },
+                { "name": "17:00", "value": 16 }
+              ],
+              "config": {
+                "color": "#d97706",
+                "height": 300
+              },
+              "layout": {
+                "width": "100%",
+                "height": 300,
+                "responsive": true
+              }
+            },
+            {
+              "id": "satisfaccion-tendencia",
+              "title": "Satisfacción del Cliente",
+              "type": "area",
+              "data": [
+                { "name": "Lun", "value": 4.2 },
+                { "name": "Mar", "value": 4.5 },
+                { "name": "Mié", "value": 4.3 },
+                { "name": "Jue", "value": 4.7 },
+                { "name": "Vie", "value": 4.6 },
+                { "name": "Sáb", "value": 4.4 },
+                { "name": "Dom", "value": 4.8 }
+              ],
+              "config": {
+                "color": "#7c3aed",
+                "fillColor": "#7c3aed",
+                "height": 300
+              },
+              "layout": {
+                "width": "100%",
+                "height": 300,
+                "responsive": true
+              }
+            },
+            {
+              "id": "distribucion-trabajo",
+              "title": "Distribución del Trabajo",
+              "type": "pie",
+              "data": [
+                { "name": "Soporte", "value": 40, "color": "#dc2626" },
+                { "name": "Desarrollo", "value": 30, "color": "#059669" },
+                { "name": "Testing", "value": 20, "color": "#0891b2" },
+                { "name": "Otros", "value": 10, "color": "#7c3aed" }
+              ],
+              "config": {
+                "height": 300
+              },
+              "layout": {
+                "width": "100%",
+                "height": 300,
+                "responsive": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

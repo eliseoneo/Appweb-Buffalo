@@ -25,8 +25,8 @@ import {
   Area
 } from 'recharts'
 
-// Importar datos dinámicos
-import dinamicoData from './dinamico-data.json'
+// Importar datos dinámicos y configuraciones
+import { loadDinamicoConfig, getAvailableConfigs, DinamicoConfigType } from './dinamico-config-loader'
 
 interface DinamicoMetric {
   id: string
@@ -54,6 +54,57 @@ interface DinamicoSection {
   metrics: DinamicoMetric[]
   charts: DinamicoChart[]
   lastUpdated: string
+  layout?: {
+    metricsPerRow?: number
+    chartLayout?: 'side-by-side' | 'stacked' | 'grid'
+    showDescription?: boolean
+    showLastUpdated?: boolean
+    backgroundColor?: string
+    borderColor?: string
+    accentColor?: string
+  }
+}
+
+interface DinamicoChart {
+  id: string
+  title: string
+  type: 'line' | 'bar' | 'pie' | 'area'
+  data: any[]
+  config: any
+  layout?: {
+    width?: string
+    height?: number
+    responsive?: boolean
+  }
+}
+
+interface PageConfig {
+  title: string
+  subtitle: string
+  layout: 'grid' | 'list' | 'card'
+  theme: 'modern' | 'classic' | 'minimal'
+  refreshInterval: number
+  maxSections: number
+  showFilters: boolean
+  showRefreshButton: boolean
+  showAddButton: boolean
+  gridColumns: {
+    mobile: number
+    tablet: number
+    desktop: number
+  }
+  chartGridColumns: {
+    mobile: number
+    tablet: number
+    desktop: number
+  }
+  defaultColors: string[]
+  chartTypes: string[]
+}
+
+interface DinamicoData {
+  pageConfig: PageConfig
+  sections: DinamicoSection[]
 }
 
 export default function DinamicoPage() {
@@ -61,8 +112,11 @@ export default function DinamicoPage() {
   const clienteId = params.clienteId as string
   const [cliente, setCliente] = useState<ClienteConfig | null>(null)
   const [sections, setSections] = useState<DinamicoSection[]>([])
+  const [pageConfig, setPageConfig] = useState<PageConfig | null>(null)
   const [selectedSection, setSelectedSection] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
+  const [currentConfigType, setCurrentConfigType] = useState<DinamicoConfigType>('default')
+  const [availableConfigs] = useState(getAvailableConfigs())
   
   // Estados para filtros
   const [selectedLanguage, setSelectedLanguage] = useState('all')
@@ -82,21 +136,28 @@ export default function DinamicoPage() {
     loadDinamicoData()
   }, [clienteId])
 
-  const loadDinamicoData = async () => {
+  const loadDinamicoData = async (configType: DinamicoConfigType = currentConfigType) => {
     try {
       setIsLoading(true)
       // Simular carga de datos
       await new Promise(resolve => setTimeout(resolve, 1000))
-      // Type assertion to ensure proper typing
-      setSections(dinamicoData.sections as DinamicoSection[])
-      if (dinamicoData.sections.length > 0) {
-        setSelectedSection(dinamicoData.sections[0].id)
+      // Load configuration based on type
+      const data = loadDinamicoConfig(configType)
+      setSections(data.sections)
+      setPageConfig(data.pageConfig)
+      setCurrentConfigType(configType)
+      if (data.sections.length > 0) {
+        setSelectedSection(data.sections[0].id)
       }
     } catch (error) {
       console.error('Error loading dinamico data:', error)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleConfigChange = (configType: DinamicoConfigType) => {
+    loadDinamicoData(configType)
   }
 
   const refreshData = () => {
@@ -127,8 +188,8 @@ export default function DinamicoPage() {
 
   const renderChart = (chart: DinamicoChart) => {
     const commonProps = {
-      width: "100%",
-      height: 300,
+      width: chart.layout?.width || "100%",
+      height: chart.layout?.height || chart.config?.height || 300,
       data: chart.data
     }
 
@@ -229,28 +290,30 @@ export default function DinamicoPage() {
       {/* Header */}
       <ClientHeader 
         cliente={cliente} 
-        title="Dashboard Dinámico"
-        subtitle="Métricas y Análisis en Tiempo Real"
+        title={pageConfig?.title || "Dashboard Dinámico"}
+        subtitle={pageConfig?.subtitle || "Métricas y Análisis en Tiempo Real"}
       />
 
       {/* Filtros debajo del header */}
-      <div className="bg-gray-50 py-4">
-        <div className="flex justify-center px-8">
-          <FilterDropdowns
-            selectedLanguage={selectedLanguage}
-            selectedCampaign={selectedCampaign}
-            selectedDateRange={selectedDateRange}
-            onLanguageChange={setSelectedLanguage}
-            onCampaignChange={setSelectedCampaign}
-            onDateRangeChange={setSelectedDateRange}
-            onClear={() => {
-              setSelectedLanguage('all')
-              setSelectedCampaign('')
-              setSelectedDateRange('Hoy')
-            }}
-          />
+      {pageConfig?.showFilters && (
+        <div className="bg-gray-50 py-4">
+          <div className="flex justify-center px-8">
+            <FilterDropdowns
+              selectedLanguage={selectedLanguage}
+              selectedCampaign={selectedCampaign}
+              selectedDateRange={selectedDateRange}
+              onLanguageChange={setSelectedLanguage}
+              onCampaignChange={setSelectedCampaign}
+              onDateRangeChange={setSelectedDateRange}
+              onClear={() => {
+                setSelectedLanguage('all')
+                setSelectedCampaign('')
+                setSelectedDateRange('Hoy')
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <div className="px-8 py-8 space-y-8">
@@ -261,18 +324,39 @@ export default function DinamicoPage() {
               <h2 className="text-lg font-semibold text-gray-800">Secciones Dinámicas</h2>
               <p className="text-sm text-gray-600">Gestiona y visualiza métricas personalizadas</p>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={refreshData}
-                className="flex items-center px-4 py-2 bg-cyan-400 text-white rounded-lg hover:bg-cyan-500 transition-colors"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Actualizar
-              </button>
-              <button className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                <Plus className="w-4 h-4 mr-2" />
-                Nueva Sección
-              </button>
+            <div className="flex items-center space-x-4">
+              {/* Configuración Selector */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">Configuración:</label>
+                <select
+                  value={currentConfigType}
+                  onChange={(e) => handleConfigChange(e.target.value as DinamicoConfigType)}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                >
+                  {availableConfigs.map((config) => (
+                    <option key={config.type} value={config.type}>
+                      {config.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex space-x-3">
+                {pageConfig?.showRefreshButton && (
+                  <button
+                    onClick={refreshData}
+                    className="flex items-center px-4 py-2 bg-cyan-400 text-white rounded-lg hover:bg-cyan-500 transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Actualizar
+                  </button>
+                )}
+                {pageConfig?.showAddButton && (
+                  <button className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nueva Sección
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -309,7 +393,11 @@ export default function DinamicoPage() {
         {currentSection && (
           <>
             {/* Grid de Métricas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={`grid gap-4 ${
+              pageConfig?.gridColumns ? 
+                `grid-cols-${pageConfig.gridColumns.mobile} md:grid-cols-${pageConfig.gridColumns.tablet} lg:grid-cols-${pageConfig.gridColumns.desktop}` :
+                'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+            }`}>
               {currentSection.metrics.map((metric) => (
                 <div
                   key={metric.id}
@@ -330,7 +418,11 @@ export default function DinamicoPage() {
             </div>
 
             {/* Gráficos de la Sección Actual */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className={`grid gap-6 ${
+              pageConfig?.chartGridColumns ? 
+                `grid-cols-${pageConfig.chartGridColumns.mobile} md:grid-cols-${pageConfig.chartGridColumns.tablet} lg:grid-cols-${pageConfig.chartGridColumns.desktop}` :
+                'grid-cols-1 lg:grid-cols-2'
+            }`}>
               {currentSection.charts.map((chart) => (
                 <div
                   key={chart.id}
