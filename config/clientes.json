@@ -5,11 +5,12 @@
     "logo": "https://agenciabuffalo.es/wp-content/uploads/2025/09/descarga.png",
     "color": "#0052cc",
     "idioma": "es",
-    "modulos": ["dashboard", "llamadas", "texto", "automatizaciones", "incidencias", "campanas", "knowledge", "prueba", "buscar"],
+    "modulos": ["dashboard", "llamadas", "texto", "automatizaciones", "incidencias", "campanas", "knowledge", "prueba", "buscar", "dinamico"],
     "grupos": {
       "Agentes de Llamadas": ["dashboard-llamadas", "prueba", "buscar", "campanas", "knowledge"],
       "Agentes de Texto/Chat": ["dashboard-texto", "incidencias", "knowledge"],
-      "Automatizaciones Internas": ["dashboard-automatizaciones", "incidencias"]
+      "Automatizaciones Internas": ["dashboard-automatizaciones", "incidencias"],
+      "Análisis Dinámico": ["dinamico"]
     }
   },
   {
@@ -29,11 +30,12 @@
     "logo": "https://agenciabuffalo.es/wp-content/uploads/2025/09/descarga.png",
     "color": "#00C896",
     "idioma": "es",
-    "modulos": ["dashboard", "llamadas", "texto", "automatizaciones", "incidencias", "campanas", "knowledge", "prueba", "buscar"],
+    "modulos": ["dashboard", "llamadas", "texto", "automatizaciones", "incidencias", "campanas", "knowledge", "prueba", "buscar", "dinamico"],
     "grupos": {
       "Agentes de Llamadas": ["dashboard-llamadas", "prueba", "buscar", "campanas", "knowledge"],
       "Agentes de Texto/Chat": ["dashboard-texto", "incidencias", "knowledge"],
-      "Automatizaciones Internas": ["dashboard-automatizaciones", "incidencias"]
+      "Automatizaciones Internas": ["dashboard-automatizaciones", "incidencias"],
+      "Análisis Dinámico": ["dinamico"]
     }
   }
 ]

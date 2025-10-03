@@ -54,7 +54,8 @@ function getSpecialModuleName(originalName: string): string {
     'Incidencias': 'Incidencias',
     'Knowledge': 'Knowledge',
     'Prueba': 'Prueba',
-    'Buscar': 'Buscar'
+    'Buscar': 'Buscar',
+    'Dinámico': 'Dinámico'
   };
   
   return nameMap[originalName] || originalName;

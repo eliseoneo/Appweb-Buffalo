@@ -1,0 +1,346 @@
+{
+  "sections": [
+    {
+      "id": "ventas",
+      "title": "Métricas de Ventas",
+      "description": "Análisis completo del rendimiento de ventas y conversiones",
+      "lastUpdated": "2025-10-02T16:30:00Z",
+      "metrics": [
+        {
+          "id": "ventas-totales",
+          "name": "Ventas Totales",
+          "value": 125000,
+          "unit": "€",
+          "trend": "up",
+          "change": 12.5,
+          "color": "#00bcd4",
+          "category": "revenue"
+        },
+        {
+          "id": "conversion-rate",
+          "name": "Tasa de Conversión",
+          "value": 3.2,
+          "unit": "%",
+          "trend": "up",
+          "change": 0.8,
+          "color": "#22c55e",
+          "category": "conversion"
+        },
+        {
+          "id": "leads-generados",
+          "name": "Leads Generados",
+          "value": 1250,
+          "unit": "",
+          "trend": "stable",
+          "change": 0,
+          "color": "#ff9800",
+          "category": "leads"
+        },
+        {
+          "id": "costo-adquisicion",
+          "name": "Costo de Adquisición",
+          "value": 45,
+          "unit": "€",
+          "trend": "down",
+          "change": -5.2,
+          "color": "#e53e3e",
+          "category": "cost"
+        }
+      ],
+      "charts": [
+        {
+          "id": "ventas-tiempo",
+          "title": "Evolución de Ventas",
+          "type": "line",
+          "data": [
+            { "name": "Ene", "value": 85000 },
+            { "name": "Feb", "value": 92000 },
+            { "name": "Mar", "value": 78000 },
+            { "name": "Abr", "value": 105000 },
+            { "name": "May", "value": 118000 },
+            { "name": "Jun", "value": 125000 }
+          ],
+          "config": {
+            "color": "#00bcd4"
+          }
+        },
+        {
+          "id": "canales-venta",
+          "title": "Ventas por Canal",
+          "type": "pie",
+          "data": [
+            { "name": "Web", "value": 45, "color": "#00bcd4" },
+            { "name": "Email", "value": 25, "color": "#22c55e" },
+            { "name": "Social", "value": 20, "color": "#ff9800" },
+            { "name": "Directo", "value": 10, "color": "#e53e3e" }
+          ],
+          "config": {}
+        }
+      ]
+    },
+    {
+      "id": "marketing",
+      "title": "Métricas de Marketing",
+      "description": "Seguimiento de campañas y efectividad publicitaria",
+      "lastUpdated": "2025-10-02T16:25:00Z",
+      "metrics": [
+        {
+          "id": "impresiones",
+          "name": "Impresiones",
+          "value": 2500000,
+          "unit": "",
+          "trend": "up",
+          "change": 18.3,
+          "color": "#3b82f6",
+          "category": "reach"
+        },
+        {
+          "id": "ctr",
+          "name": "CTR",
+          "value": 2.8,
+          "unit": "%",
+          "trend": "up",
+          "change": 0.5,
+          "color": "#10b981",
+          "category": "engagement"
+        },
+        {
+          "id": "cpc",
+          "name": "CPC",
+          "value": 0.85,
+          "unit": "€",
+          "trend": "down",
+          "change": -12.1,
+          "color": "#f59e0b",
+          "category": "cost"
+        },
+        {
+          "id": "roas",
+          "name": "ROAS",
+          "value": 4.2,
+          "unit": "x",
+          "trend": "up",
+          "change": 15.7,
+          "color": "#8b5cf6",
+          "category": "performance"
+        }
+      ],
+      "charts": [
+        {
+          "id": "campañas-performance",
+          "title": "Rendimiento por Campaña",
+          "type": "bar",
+          "data": [
+            { "name": "Campaña A", "value": 125000 },
+            { "name": "Campaña B", "value": 98000 },
+            { "name": "Campaña C", "value": 156000 },
+            { "name": "Campaña D", "value": 87000 },
+            { "name": "Campaña E", "value": 134000 }
+          ],
+          "config": {
+            "color": "#3b82f6"
+          }
+        },
+        {
+          "id": "tendencias-marketing",
+          "title": "Tendencias de Marketing",
+          "type": "area",
+          "data": [
+            { "name": "Lun", "value": 1200 },
+            { "name": "Mar", "value": 1350 },
+            { "name": "Mié", "value": 1100 },
+            { "name": "Jue", "value": 1450 },
+            { "name": "Vie", "value": 1600 },
+            { "name": "Sáb", "value": 800 },
+            { "name": "Dom", "value": 900 }
+          ],
+          "config": {
+            "color": "#8b5cf6",
+            "fillColor": "#8b5cf6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "operaciones",
+      "title": "Métricas Operacionales",
+      "description": "Indicadores de eficiencia y productividad operativa",
+      "lastUpdated": "2025-10-02T16:20:00Z",
+      "metrics": [
+        {
+          "id": "productividad",
+          "name": "Productividad",
+          "value": 87.5,
+          "unit": "%",
+          "trend": "up",
+          "change": 3.2,
+          "color": "#10b981",
+          "category": "efficiency"
+        },
+        {
+          "id": "tiempo-respuesta",
+          "name": "Tiempo de Respuesta",
+          "value": 2.3,
+          "unit": "min",
+          "trend": "down",
+          "change": -15.4,
+          "color": "#f59e0b",
+          "category": "performance"
+        },
+        {
+          "id": "satisfaccion-cliente",
+          "name": "Satisfacción Cliente",
+          "value": 4.6,
+          "unit": "/5",
+          "trend": "up",
+          "change": 0.3,
+          "color": "#3b82f6",
+          "category": "quality"
+        },
+        {
+          "id": "tickets-resueltos",
+          "name": "Tickets Resueltos",
+          "value": 342,
+          "unit": "",
+          "trend": "up",
+          "change": 8.7,
+          "color": "#8b5cf6",
+          "category": "volume"
+        }
+      ],
+      "charts": [
+        {
+          "id": "productividad-diaria",
+          "title": "Productividad Diaria",
+          "type": "line",
+          "data": [
+            { "name": "Lun", "value": 85 },
+            { "name": "Mar", "value": 88 },
+            { "name": "Mié", "value": 82 },
+            { "name": "Jue", "value": 90 },
+            { "name": "Vie", "value": 87 },
+            { "name": "Sáb", "value": 75 },
+            { "name": "Dom", "value": 70 }
+          ],
+          "config": {
+            "color": "#10b981"
+          }
+        },
+        {
+          "id": "distribucion-trabajo",
+          "title": "Distribución del Trabajo",
+          "type": "pie",
+          "data": [
+            { "name": "Desarrollo", "value": 40, "color": "#3b82f6" },
+            { "name": "Testing", "value": 25, "color": "#10b981" },
+            { "name": "Reuniones", "value": 20, "color": "#f59e0b" },
+            { "name": "Documentación", "value": 15, "color": "#8b5cf6" }
+          ],
+          "config": {}
+        }
+      ]
+    },
+    {
+      "id": "financiero",
+      "title": "Métricas Financieras",
+      "description": "Análisis de rentabilidad y flujo de caja",
+      "lastUpdated": "2025-10-02T16:15:00Z",
+      "metrics": [
+        {
+          "id": "ingresos-mes",
+          "name": "Ingresos del Mes",
+          "value": 185000,
+          "unit": "€",
+          "trend": "up",
+          "change": 22.1,
+          "color": "#10b981",
+          "category": "revenue"
+        },
+        {
+          "id": "gastos-mes",
+          "name": "Gastos del Mes",
+          "value": 125000,
+          "unit": "€",
+          "trend": "down",
+          "change": -5.8,
+          "color": "#e53e3e",
+          "category": "expenses"
+        },
+        {
+          "id": "margen-beneficio",
+          "name": "Margen de Beneficio",
+          "value": 32.4,
+          "unit": "%",
+          "trend": "up",
+          "change": 4.2,
+          "color": "#3b82f6",
+          "category": "profitability"
+        },
+        {
+          "id": "roi",
+          "name": "ROI",
+          "value": 148,
+          "unit": "%",
+          "trend": "up",
+          "change": 12.3,
+          "color": "#8b5cf6",
+          "category": "performance"
+        }
+      ],
+      "charts": [
+        {
+          "id": "flujo-caja",
+          "title": "Flujo de Caja",
+          "type": "area",
+          "data": [
+            { "name": "Ene", "value": 45000 },
+            { "name": "Feb", "value": 52000 },
+            { "name": "Mar", "value": 38000 },
+            { "name": "Abr", "value": 61000 },
+            { "name": "May", "value": 68000 },
+            { "name": "Jun", "value": 75000 }
+          ],
+          "config": {
+            "color": "#10b981",
+            "fillColor": "#10b981"
+          }
+        },
+        {
+          "id": "distribucion-gastos",
+          "title": "Distribución de Gastos",
+          "type": "bar",
+          "data": [
+            { "name": "Personal", "value": 45000 },
+            { "name": "Marketing", "value": 25000 },
+            { "name": "Tecnología", "value": 20000 },
+            { "name": "Operaciones", "value": 15000 },
+            { "name": "Otros", "value": 20000 }
+          ],
+          "config": {
+            "color": "#e53e3e"
+          }
+        }
+      ]
+    }
+  ],
+  "config": {
+    "refreshInterval": 300000,
+    "maxSections": 10,
+    "defaultColors": [
+      "#00bcd4",
+      "#22c55e",
+      "#f59e0b",
+      "#e53e3e",
+      "#3b82f6",
+      "#8b5cf6",
+      "#10b981",
+      "#f97316"
+    ],
+    "chartTypes": [
+      "line",
+      "bar",
+      "pie",
+      "area"
+    ]
+  }
+}

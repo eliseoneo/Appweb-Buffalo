@@ -100,5 +100,12 @@ export const MODULOS_DISPONIBLES: Record<string, ModuloConfig> = {
     icono: 'Search',
     descripcion: 'Búsqueda de datos y registros',
     ruta: '/buscar'
+  },
+  dinamico: {
+    id: 'dinamico',
+    nombre: 'Dinámico',
+    icono: 'BarChart3',
+    descripcion: 'Métricas y análisis dinámicos en tiempo real',
+    ruta: '/dinamico'
   }
 };

@@ -17,7 +17,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  BarChart3
 } from 'lucide-react'
 
 interface ClienteLayoutProps {
@@ -34,7 +35,8 @@ const iconMap = {
   BookOpen,
   TestTube,
   Search,
-  Settings
+  Settings,
+  BarChart3
 }
 
 export default function ClienteLayout({ children }: ClienteLayoutProps) {
