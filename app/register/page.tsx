@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@/lib/supabaseClient'
+// Supabase removed - using mock authentication
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  // const supabase = createClientComponentClient() // Disabled - using mock auth
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,18 +26,16 @@ export default function RegisterPage() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
-      },
-    })
-
-    if (error) {
-      setError(error.message)
-    } else {
-      router.push('/login?message=Check email to confirm registration')
+    // Mock registration - Supabase disabled
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Mock successful registration
+      console.log('✅ Mock registration successful for:', email)
+      router.push('/login?message=Registration successful! You can now login.')
+    } catch (error) {
+      setError('Error during registration. Please try again.')
     }
     setLoading(false)
   }
