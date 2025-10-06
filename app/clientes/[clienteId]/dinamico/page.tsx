@@ -115,6 +115,7 @@ export default function DinamicoPage() {
   const [pageConfig, setPageConfig] = useState<PageConfig | null>(null)
   const [selectedSection, setSelectedSection] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentConfigType, setCurrentConfigType] = useState<DinamicoConfigType>('default')
   const [availableConfigs] = useState(getAvailableConfigs())
   
@@ -136,9 +137,27 @@ export default function DinamicoPage() {
     loadDinamicoData()
   }, [clienteId])
 
-  const loadDinamicoData = async (configType: DinamicoConfigType = currentConfigType) => {
+  // Auto-refresh mechanism using refreshInterval
+  useEffect(() => {
+    if (!pageConfig?.refreshInterval) return
+
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing dynamic data...')
+      refreshData(true) // Pass true to indicate it's an auto-refresh
+    }, pageConfig.refreshInterval)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [pageConfig?.refreshInterval, clienteId])
+
+  const loadDinamicoData = async (configType: DinamicoConfigType = currentConfigType, isAutoRefresh: boolean = false) => {
     try {
-      setIsLoading(true)
+      if (!isAutoRefresh) {
+        setIsLoading(true)
+      } else {
+        setIsRefreshing(true)
+      }
       console.log('🔄 Loading dinamico data for client:', clienteId)
       
       // Try to load from database API first
@@ -146,6 +165,18 @@ export default function DinamicoPage() {
       
       if (apiData) {
         console.log('✅ Loaded data from database API:', apiData)
+        
+        // Log chart data for debugging
+        apiData.sections.forEach(section => {
+          if (section.charts) {
+            section.charts.forEach(chart => {
+              if (chart.id === 'ventas-tiempo') {
+                console.log('📊 Evolución de Ventas chart data:', chart.data)
+              }
+            })
+          }
+        })
+        
         setSections(apiData.sections)
         setPageConfig(apiData.pageConfig)
         setCurrentConfigType('database') // Mark as loaded from database
@@ -175,6 +206,7 @@ export default function DinamicoPage() {
       }
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }
 
@@ -182,8 +214,8 @@ export default function DinamicoPage() {
     loadDinamicoData(configType)
   }
 
-  const refreshData = () => {
-    loadDinamicoData()
+  const refreshData = (isAutoRefresh: boolean = false) => {
+    loadDinamicoData(currentConfigType, isAutoRefresh)
   }
 
   const getTrendIcon = (trend: string) => {
@@ -347,6 +379,14 @@ export default function DinamicoPage() {
               <p className="text-sm text-gray-600">Gestiona y visualiza métricas personalizadas</p>
             </div>
             <div className="flex items-center space-x-4">
+              {/* Refresh Status Indicator */}
+              {isRefreshing && (
+                <div className="flex items-center space-x-2 text-sm text-cyan-600">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Actualizando datos...</span>
+                </div>
+              )}
+              
               {/* Configuración Selector */}
               <div className="flex items-center space-x-2">
                 <label className="text-sm font-medium text-gray-700">Configuración:</label>
@@ -365,11 +405,12 @@ export default function DinamicoPage() {
               <div className="flex space-x-3">
                 {pageConfig?.showRefreshButton && (
                   <button
-                    onClick={refreshData}
-                    className="flex items-center px-4 py-2 bg-cyan-400 text-white rounded-lg hover:bg-cyan-500 transition-colors"
+                    onClick={() => refreshData(false)}
+                    disabled={isRefreshing}
+                    className="flex items-center px-4 py-2 bg-cyan-400 text-white rounded-lg hover:bg-cyan-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Actualizar
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    {isRefreshing ? 'Actualizando...' : 'Actualizar'}
                   </button>
                 )}
                 {pageConfig?.showAddButton && (
