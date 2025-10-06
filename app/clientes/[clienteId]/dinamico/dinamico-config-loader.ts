@@ -1,7 +1,7 @@
 import dinamicoData from './dinamico-data.json'
 import dinamicoExamples from './dinamico-data-examples.json'
 
-export type DinamicoConfigType = 'default' | 'minimal' | 'executive' | 'operational' | 'custom'
+export type DinamicoConfigType = 'default' | 'minimal' | 'executive' | 'operational' | 'custom' | 'database'
 
 export interface DinamicoConfig {
   pageConfig: {
@@ -66,24 +66,41 @@ export interface DinamicoConfig {
   }>
 }
 
+export async function loadDinamicoConfigFromAPI(clienteId: string): Promise<DinamicoConfig | null> {
+  try {
+    const response = await fetch(`/api/dinamico/${clienteId}`)
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`)
+    }
+    const result = await response.json()
+    if (result.success && result.data) {
+      return result.data as DinamicoConfig
+    }
+    return null
+  } catch (error) {
+    console.error('Error loading dinamico config from API:', error)
+    return null
+  }
+}
+
 export function loadDinamicoConfig(configType: DinamicoConfigType = 'default'): DinamicoConfig {
   switch (configType) {
     case 'minimal':
-      return dinamicoExamples.examples.minimal as DinamicoConfig
+      return dinamicoExamples.examples.minimal as unknown as DinamicoConfig
     case 'executive':
-      return dinamicoExamples.examples.executive as DinamicoConfig
+      return dinamicoExamples.examples.executive as unknown as DinamicoConfig
     case 'operational':
-      return dinamicoExamples.examples.operational as DinamicoConfig
+      return dinamicoExamples.examples.operational as unknown as DinamicoConfig
     case 'custom':
       // Load from localStorage or API
       const customConfig = localStorage.getItem('dinamico-custom-config')
       if (customConfig) {
-        return JSON.parse(customConfig)
+        return JSON.parse(customConfig) as DinamicoConfig
       }
-      return dinamicoData as DinamicoConfig
+      return dinamicoData as unknown as DinamicoConfig
     case 'default':
     default:
-      return dinamicoData as DinamicoConfig
+      return dinamicoData as unknown as DinamicoConfig
   }
 }
 

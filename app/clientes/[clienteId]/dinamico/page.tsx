@@ -26,7 +26,7 @@ import {
 } from 'recharts'
 
 // Importar datos dinámicos y configuraciones
-import { loadDinamicoConfig, getAvailableConfigs, DinamicoConfigType } from './dinamico-config-loader'
+import { loadDinamicoConfig, loadDinamicoConfigFromAPI, getAvailableConfigs, DinamicoConfigType } from './dinamico-config-loader'
 
 interface DinamicoMetric {
   id: string
@@ -139,9 +139,33 @@ export default function DinamicoPage() {
   const loadDinamicoData = async (configType: DinamicoConfigType = currentConfigType) => {
     try {
       setIsLoading(true)
-      // Simular carga de datos
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      // Load configuration based on type
+      console.log('🔄 Loading dinamico data for client:', clienteId)
+      
+      // Try to load from database API first
+      const apiData = await loadDinamicoConfigFromAPI(clienteId)
+      
+      if (apiData) {
+        console.log('✅ Loaded data from database API:', apiData)
+        setSections(apiData.sections)
+        setPageConfig(apiData.pageConfig)
+        setCurrentConfigType('database') // Mark as loaded from database
+        if (apiData.sections.length > 0) {
+          setSelectedSection(apiData.sections[0].id)
+        }
+      } else {
+        console.log('⚠️ Database API failed, falling back to static config')
+        // Fallback to static configuration
+        const data = loadDinamicoConfig(configType)
+        setSections(data.sections)
+        setPageConfig(data.pageConfig)
+        setCurrentConfigType(configType)
+        if (data.sections.length > 0) {
+          setSelectedSection(data.sections[0].id)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading dinamico data:', error)
+      // Fallback to static configuration on error
       const data = loadDinamicoConfig(configType)
       setSections(data.sections)
       setPageConfig(data.pageConfig)
@@ -149,8 +173,6 @@ export default function DinamicoPage() {
       if (data.sections.length > 0) {
         setSelectedSection(data.sections[0].id)
       }
-    } catch (error) {
-      console.error('Error loading dinamico data:', error)
     } finally {
       setIsLoading(false)
     }
