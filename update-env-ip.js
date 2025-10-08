@@ -76,3 +76,5 @@ async function updateEnvWithIP() {
 // Run the update
 updateEnvWithIP().catch(console.error)
 
+
+
