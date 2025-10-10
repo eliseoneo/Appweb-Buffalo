@@ -114,5 +114,12 @@ export const MODULOS_DISPONIBLES: Record<string, ModuloConfig> = {
     icono: 'BarChart3',
     descripcion: 'Dashboard de KPIs basado en datos de llamadas',
     ruta: '/dashboard-kpis'
+  },
+  'dashboard-ia': {
+    id: 'dashboard-ia',
+    nombre: 'Dashboard IA',
+    icono: 'Brain',
+    descripcion: 'Insights inteligentes generados automáticamente con IA',
+    ruta: '/dashboard-ia'
   }
 };
