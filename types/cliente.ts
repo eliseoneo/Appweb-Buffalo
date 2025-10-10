@@ -107,5 +107,12 @@ export const MODULOS_DISPONIBLES: Record<string, ModuloConfig> = {
     icono: 'BarChart3',
     descripcion: 'Métricas y análisis dinámicos en tiempo real',
     ruta: '/dinamico'
+  },
+  'dashboard-kpis': {
+    id: 'dashboard-kpis',
+    nombre: 'Dashboard KPIs',
+    icono: 'BarChart3',
+    descripcion: 'Dashboard de KPIs basado en datos de llamadas',
+    ruta: '/dashboard-kpis'
   }
 };

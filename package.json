@@ -13,7 +13,9 @@
     "db:sync-advanced": "node sync-cloud-to-local-advanced.js",
     "db:sync-dry-run": "node sync-cloud-to-local-advanced.js --dry-run",
     "db:sync-structure": "node sync-cloud-to-local-advanced.js --skip-data",
-    "db:query-kpis": "node query-crear-kpis.js"
+    "db:query-kpis": "node query-crear-kpis.js",
+    "db:create-llamadas": "node run-create-llamadas-table.js local",
+    "db:create-llamadas-cloud": "node run-create-llamadas-table.js cloud"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
