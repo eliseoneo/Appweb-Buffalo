@@ -1,41 +1,45 @@
 {
-  "name": "buffalo-ai-dashboard",
-  "version": "1.0.0",
-  "description": "Sistema de gestión multi-tenant para Buffalo AI",
+  "name": "buffalo-ia-clean",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:test": "node test-postgres-db.js",
+    "db:test-setup": "node test-sync-setup.js",
+    "db:sync": "node sync-cloud-to-local.js",
+    "db:sync-advanced": "node sync-cloud-to-local-advanced.js",
+    "db:sync-dry-run": "node sync-cloud-to-local-advanced.js --dry-run",
+    "db:sync-structure": "node sync-cloud-to-local-advanced.js --skip-data",
+    "db:query-kpis": "node query-crear-kpis.js"
   },
   "dependencies": {
-    "@types/node": "20.10.5",
-    "@types/pg": "^8.15.5",
-    "@types/react": "18.2.45",
-    "@types/react-dom": "18.2.18",
-    "autoprefixer": "10.4.16",
-    "dotenv": "^17.2.3",
-    "lucide-react": "0.294.0",
-    "next": "^14.2.33",
-    "pg": "^8.16.3",
-    "postcss": "8.4.32",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "recharts": "^3.2.1",
-    "tailwindcss": "3.3.6",
-    "typescript": "5.3.3"
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "bcryptjs": "^2.4.3",
+    "chart.js": "^4.4.0",
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "next": "14.0.3",
+    "pg": "^8.11.3",
+    "react": "^18",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18"
   },
   "devDependencies": {
-    "eslint": "8.56.0",
-    "eslint-config-next": "14.0.4"
-  },
-  "keywords": [
-    "buffalo-ai",
-    "dashboard",
-    "multi-tenant",
-    "nextjs"
-  ],
-  "author": "Buffalo AI",
-  "license": "MIT"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20",
+    "@types/pg": "^8.10.9",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
+  }
 }

@@ -57,10 +57,27 @@ NODE_ENV="development"
 
 ### 4. Configurar base de datos
 
+**Opción A: Base de datos local desde cero**
+
 ```bash
-# Crear usuario, base de datos y poblar con datos
-npm run db:setup
+# Ejecutar script SQL completo
+psql -U postgres -f database/setup-completo.sql
 ```
+
+**Opción B: Sincronizar desde base de datos en la nube**
+
+```bash
+# 1. Agregar URL de cloud en .env.local
+DATABASE_URL_CLOUD="postgresql://user:password@host:5432/database"
+
+# 2. Verificar configuración
+npm run db:test-setup
+
+# 3. Sincronizar
+npm run db:sync
+```
+
+📖 **Ver guía completa**: [SYNC-DATABASE-GUIDE.md](SYNC-DATABASE-GUIDE.md) | [Quick Start](QUICK-SYNC.md)
 
 ### 5. Ejecutar la aplicación
 
@@ -114,12 +131,18 @@ buffalo-ai-dashboard/
 ## 🔧 Scripts Disponibles
 
 ```bash
-npm run dev          # Ejecutar en modo desarrollo
-npm run build        # Construir para producción
-npm run start        # Ejecutar en modo producción
-npm run lint         # Ejecutar linter
-npm run db:setup     # Configurar base de datos
-npm run db:reset     # Resetear base de datos
+npm run dev                 # Ejecutar en modo desarrollo
+npm run build               # Construir para producción
+npm run start               # Ejecutar en modo producción
+npm run lint                # Ejecutar linter
+
+# Database Scripts
+npm run db:test             # Probar conexión a base de datos
+npm run db:test-setup       # Verificar configuración de sync
+npm run db:sync             # Sincronizar cloud → local (básico)
+npm run db:sync-advanced    # Sincronizar cloud → local (avanzado)
+npm run db:sync-dry-run     # Ver qué se sincronizaría (sin cambios)
+npm run db:sync-structure   # Sincronizar solo estructura (sin datos)
 ```
 
 ## 🌐 URLs de la Aplicación
@@ -140,6 +163,25 @@ El sistema utiliza PostgreSQL con las siguientes tablas principales:
 - `aplicaciones` - Aplicaciones generadas
 - `metricas` - Métricas y estadísticas
 - `logs_auditoria` - Logs de auditoría
+
+### 🔄 Sincronización Cloud → Local
+
+El proyecto incluye herramientas para sincronizar datos desde una base de datos en la nube a tu entorno local:
+
+- **Sync Básico**: Sincronización rápida y simple
+- **Sync Avanzado**: Maneja foreign keys, índices y secuencias
+- **Dry Run**: Previsualiza cambios sin aplicarlos
+- **Sync Selectivo**: Sincroniza schemas o tablas específicas
+
+```bash
+# Windows
+.\sync-cloud-to-local.bat
+
+# Linux/Mac
+npm run db:sync
+```
+
+📖 **Guía completa**: [SYNC-DATABASE-GUIDE.md](SYNC-DATABASE-GUIDE.md)
 
 ## 🔒 Seguridad
 
