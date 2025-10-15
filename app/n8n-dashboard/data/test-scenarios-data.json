@@ -1,0 +1,346 @@
+{
+  "metadata": {
+    "generated_at": "2025-10-15T00:00:00.000Z",
+    "total_calls": 15847,
+    "date_range": "2025-09-01 to 2025-10-15",
+    "campaigns": ["Navidad 2024", "Black Friday", "Verano 2024", "Primavera", "Back to School", "TEST"],
+    "languages": ["es", "ca", "en"]
+  },
+  "calls_by_date": {
+    "today": {
+      "total_calls": 142,
+      "answered": 109,
+      "response_rate": 76.8,
+      "avg_duration": 17.2,
+      "total_cost": 6.39,
+      "sentiment": {
+        "positive": 62,
+        "neutral": 51,
+        "negative": 29
+      },
+      "by_campaign": {
+        "Navidad 2024": 45,
+        "Black Friday": 38,
+        "Verano 2024": 28,
+        "Primavera": 18,
+        "Back to School": 13
+      },
+      "by_language": {
+        "es": 89,
+        "ca": 35,
+        "en": 18
+      },
+      "disconnect_reasons": {
+        "usuario cuelga": 58,
+        "agente cuelga": 42,
+        "no hay respuesta": 23,
+        "ocupado": 12,
+        "tiempo maximo": 7
+      }
+    },
+    "yesterday": {
+      "total_calls": 156,
+      "answered": 121,
+      "response_rate": 77.6,
+      "avg_duration": 18.5,
+      "total_cost": 7.02,
+      "sentiment": {
+        "positive": 71,
+        "neutral": 52,
+        "negative": 33
+      },
+      "by_campaign": {
+        "Navidad 2024": 52,
+        "Black Friday": 41,
+        "Verano 2024": 31,
+        "Primavera": 19,
+        "Back to School": 13
+      },
+      "by_language": {
+        "es": 98,
+        "ca": 38,
+        "en": 20
+      },
+      "disconnect_reasons": {
+        "usuario cuelga": 64,
+        "agente cuelga": 48,
+        "no hay respuesta": 25,
+        "ocupado": 13,
+        "tiempo maximo": 6
+      }
+    },
+    "last_7_days": {
+      "total_calls": 987,
+      "answered": 762,
+      "response_rate": 77.2,
+      "avg_duration": 18.8,
+      "total_cost": 44.42,
+      "sentiment": {
+        "positive": 447,
+        "neutral": 342,
+        "negative": 198
+      },
+      "by_campaign": {
+        "Navidad 2024": 312,
+        "Black Friday": 268,
+        "Verano 2024": 189,
+        "Primavera": 134,
+        "Back to School": 84
+      },
+      "by_language": {
+        "es": 618,
+        "ca": 245,
+        "en": 124
+      },
+      "disconnect_reasons": {
+        "usuario cuelga": 395,
+        "agente cuelga": 297,
+        "no hay respuesta": 148,
+        "ocupado": 89,
+        "tiempo maximo": 58
+      }
+    },
+    "last_30_days": {
+      "total_calls": 2847,
+      "answered": 2198,
+      "response_rate": 77.2,
+      "avg_duration": 18.5,
+      "total_cost": 128.45,
+      "sentiment": {
+        "positive": 1285,
+        "neutral": 987,
+        "negative": 575
+      },
+      "by_campaign": {
+        "Navidad 2024": 892,
+        "Black Friday": 745,
+        "Verano 2024": 567,
+        "Primavera": 412,
+        "Back to School": 231
+      },
+      "by_language": {
+        "es": 1782,
+        "ca": 712,
+        "en": 353
+      },
+      "disconnect_reasons": {
+        "usuario cuelga": 1142,
+        "agente cuelga": 856,
+        "no hay respuesta": 427,
+        "ocupado": 256,
+        "tiempo maximo": 166
+      }
+    },
+    "this_month": {
+      "total_calls": 892,
+      "answered": 689,
+      "response_rate": 77.2,
+      "avg_duration": 18.3,
+      "total_cost": 40.14,
+      "sentiment": {
+        "positive": 402,
+        "neutral": 309,
+        "negative": 181
+      },
+      "by_campaign": {
+        "Navidad 2024": 280,
+        "Black Friday": 233,
+        "Verano 2024": 178,
+        "Primavera": 129,
+        "Back to School": 72
+      },
+      "by_language": {
+        "es": 558,
+        "ca": 223,
+        "en": 111
+      },
+      "disconnect_reasons": {
+        "usuario cuelga": 358,
+        "agente cuelga": 268,
+        "no hay respuesta": 134,
+        "ocupado": 80,
+        "tiempo maximo": 52
+      }
+    },
+    "last_month": {
+      "total_calls": 765,
+      "answered": 591,
+      "response_rate": 77.3,
+      "avg_duration": 18.7,
+      "total_cost": 34.43,
+      "sentiment": {
+        "positive": 345,
+        "neutral": 265,
+        "negative": 155
+      },
+      "by_campaign": {
+        "Navidad 2024": 240,
+        "Black Friday": 199,
+        "Verano 2024": 152,
+        "Primavera": 110,
+        "Back to School": 64
+      },
+      "by_language": {
+        "es": 479,
+        "ca": 191,
+        "en": 95
+      },
+      "disconnect_reasons": {
+        "usuario cuelga": 307,
+        "agente cuelga": 230,
+        "no hay respuesta": 115,
+        "ocupado": 69,
+        "tiempo maximo": 44
+      }
+    }
+  },
+  "calls_by_campaign": {
+    "Navidad 2024": {
+      "total_calls": 892,
+      "conversion_rate": 22.5,
+      "avg_cost": 0.048,
+      "sentiment_positive": 48.2
+    },
+    "Black Friday": {
+      "total_calls": 745,
+      "conversion_rate": 19.8,
+      "avg_cost": 0.052,
+      "sentiment_positive": 44.1
+    },
+    "Verano 2024": {
+      "total_calls": 567,
+      "conversion_rate": 18.5,
+      "avg_cost": 0.045,
+      "sentiment_positive": 42.8
+    },
+    "Primavera": {
+      "total_calls": 412,
+      "conversion_rate": 17.2,
+      "avg_cost": 0.051,
+      "sentiment_positive": 41.5
+    },
+    "Back to School": {
+      "total_calls": 231,
+      "conversion_rate": 16.8,
+      "avg_cost": 0.049,
+      "sentiment_positive": 39.7
+    },
+    "TEST": {
+      "total_calls": 245,
+      "conversion_rate": 24.1,
+      "avg_cost": 0.041,
+      "sentiment_positive": 52.3
+    }
+  },
+  "calls_by_language": {
+    "es": {
+      "total_calls": 1782,
+      "conversion_rate": 21.2,
+      "sentiment_positive": 46.8
+    },
+    "ca": {
+      "total_calls": 712,
+      "conversion_rate": 19.5,
+      "sentiment_positive": 43.2
+    },
+    "en": {
+      "total_calls": 353,
+      "conversion_rate": 17.8,
+      "sentiment_positive": 41.1
+    }
+  },
+  "evolution_data": {
+    "today": [
+      {"hour": "00:00", "calls": 2, "conversions": 0},
+      {"hour": "01:00", "calls": 1, "conversions": 0},
+      {"hour": "08:00", "calls": 8, "conversions": 2},
+      {"hour": "09:00", "calls": 15, "conversions": 3},
+      {"hour": "10:00", "calls": 22, "conversions": 5},
+      {"hour": "11:00", "calls": 19, "conversions": 4},
+      {"hour": "12:00", "calls": 18, "conversions": 3},
+      {"hour": "13:00", "calls": 12, "conversions": 2},
+      {"hour": "14:00", "calls": 16, "conversions": 3},
+      {"hour": "15:00", "calls": 14, "conversions": 3},
+      {"hour": "16:00", "calls": 15, "conversions": 4}
+    ],
+    "last_7_days": [
+      {"date": "2025-10-09", "calls": 145, "conversions": 28},
+      {"date": "2025-10-10", "calls": 138, "conversions": 26},
+      {"date": "2025-10-11", "calls": 152, "conversions": 31},
+      {"date": "2025-10-12", "calls": 129, "conversions": 24},
+      {"date": "2025-10-13", "calls": 141, "conversions": 27},
+      {"date": "2025-10-14", "calls": 156, "conversions": 30},
+      {"date": "2025-10-15", "calls": 142, "conversions": 29}
+    ],
+    "last_30_days": [
+      {"date": "2025-09-16", "calls": 92, "conversions": 18},
+      {"date": "2025-09-17", "calls": 88, "conversions": 16},
+      {"date": "2025-09-18", "calls": 95, "conversions": 19},
+      {"date": "2025-09-19", "calls": 102, "conversions": 21},
+      {"date": "2025-09-20", "calls": 89, "conversions": 17},
+      {"date": "2025-09-21", "calls": 76, "conversions": 14},
+      {"date": "2025-09-22", "calls": 84, "conversions": 16},
+      {"date": "2025-09-23", "calls": 98, "conversions": 20},
+      {"date": "2025-09-24", "calls": 91, "conversions": 18},
+      {"date": "2025-09-25", "calls": 105, "conversions": 22},
+      {"date": "2025-09-26", "calls": 87, "conversions": 16},
+      {"date": "2025-09-27", "calls": 94, "conversions": 19},
+      {"date": "2025-09-28", "calls": 86, "conversions": 17},
+      {"date": "2025-09-29", "calls": 99, "conversions": 20},
+      {"date": "2025-09-30", "calls": 103, "conversions": 21},
+      {"date": "2025-10-01", "calls": 96, "conversions": 19},
+      {"date": "2025-10-02", "calls": 108, "conversions": 23},
+      {"date": "2025-10-03", "calls": 92, "conversions": 18},
+      {"date": "2025-10-04", "calls": 100, "conversions": 20},
+      {"date": "2025-10-05", "calls": 95, "conversions": 19},
+      {"date": "2025-10-06", "calls": 88, "conversions": 17},
+      {"date": "2025-10-07", "calls": 112, "conversions": 24},
+      {"date": "2025-10-08", "calls": 97, "conversions": 19},
+      {"date": "2025-10-09", "calls": 145, "conversions": 28},
+      {"date": "2025-10-10", "calls": 138, "conversions": 26},
+      {"date": "2025-10-11", "calls": 152, "conversions": 31},
+      {"date": "2025-10-12", "calls": 129, "conversions": 24},
+      {"date": "2025-10-13", "calls": 141, "conversions": 27},
+      {"date": "2025-10-14", "calls": 156, "conversions": 30},
+      {"date": "2025-10-15", "calls": 142, "conversions": 29}
+    ]
+  },
+  "agent_performance_by_filter": {
+    "all": [
+      {"agent": "MODELO 1", "calls": 1456, "conversions": 262, "conversionRate": 18.0},
+      {"agent": "MODELO 2", "calls": 892, "conversions": 196, "conversionRate": 22.0},
+      {"agent": "DEMO V2 PLANETA", "calls": 499, "conversions": 82, "conversionRate": 16.4}
+    ],
+    "today": [
+      {"agent": "MODELO 1", "calls": 72, "conversions": 13, "conversionRate": 18.1},
+      {"agent": "MODELO 2", "calls": 45, "conversions": 10, "conversionRate": 22.2},
+      {"agent": "DEMO V2 PLANETA", "calls": 25, "conversions": 4, "conversionRate": 16.0}
+    ],
+    "last_7_days": [
+      {"agent": "MODELO 1", "calls": 505, "conversions": 91, "conversionRate": 18.0},
+      {"agent": "MODELO 2", "calls": 310, "conversions": 68, "conversionRate": 21.9},
+      {"agent": "DEMO V2 PLANETA", "calls": 172, "conversions": 28, "conversionRate": 16.3}
+    ]
+  },
+  "cost_per_conversion_by_filter": {
+    "all": [
+      {"campaign": "TEST", "cost": 10.04, "conversions": 59, "costPerConversion": 11.50},
+      {"campaign": "Navidad 2024", "cost": 42.82, "conversions": 201, "costPerConversion": 14.20},
+      {"campaign": "Black Friday", "cost": 38.74, "conversions": 148, "costPerConversion": 15.80},
+      {"campaign": "Verano 2024", "cost": 25.52, "conversions": 105, "costPerConversion": 12.80}
+    ],
+    "today": [
+      {"campaign": "TEST", "cost": 1.85, "conversions": 11, "costPerConversion": 11.60},
+      {"campaign": "Navidad 2024", "cost": 2.16, "conversions": 10, "costPerConversion": 14.40},
+      {"campaign": "Black Friday", "cost": 1.98, "conversions": 7, "costPerConversion": 16.00},
+      {"campaign": "Verano 2024", "cost": 1.26, "conversions": 5, "costPerConversion": 12.60}
+    ],
+    "last_7_days": [
+      {"campaign": "TEST", "cost": 12.85, "conversions": 20, "costPerConversion": 11.45},
+      {"campaign": "Navidad 2024", "cost": 14.98, "conversions": 70, "costPerConversion": 14.10},
+      {"campaign": "Black Friday", "cost": 13.97, "conversions": 52, "costPerConversion": 15.60},
+      {"campaign": "Verano 2024", "cost": 8.51, "conversions": 37, "costPerConversion": 12.70}
+    ]
+  }
+}
+

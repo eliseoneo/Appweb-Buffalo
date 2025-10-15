@@ -1,30 +1,84 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import StatCard from './components/StatCard';
 import CallEvolutionChart from './components/CallEvolutionChart';
 import DonutChart from './components/DonutChart';
 import BarChartComponent from './components/BarChartComponent';
-import {
-  totalCallsData,
-  responseRateData,
-  totalCostData,
-  sentimentData,
-  disconnectReasonsData,
-  callEvolutionData,
-  agentPerformanceData,
-  costPerConversionData
-} from './data/synthetic-data';
+import MLInsightCard from './components/MLInsightCard';
+import WeaknessHeatmap from './components/WeaknessHeatmap';
+import ProblemConcentration from './components/ProblemConcentration';
+import PredictionTrendChart from './components/PredictionTrendChart';
+import FilterDropdowns from '@/components/FilterDropdowns';
+import { getFilteredData, getFilterStatistics } from './data/filter-data-utils';
+import { analyzeDataAndSelectScenario, generateMLScenario } from './data/ml-scenarios';
 
 export default function DashboardBase() {
+  const [viewMode, setViewMode] = useState<'normal' | 'ml'>('normal');
+  const [mlScenario, setMlScenario] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Filter states
+  const [selectedLanguage, setSelectedLanguage] = useState('all');
+  const [selectedCampaign, setSelectedCampaign] = useState('');
+  const [selectedDateRange, setSelectedDateRange] = useState('Hoy');
+  
+  // Filtered dashboard data
+  const [dashboardData, setDashboardData] = useState(() => 
+    getFilteredData('Hoy', '', 'all')
+  );
+
+  // Update data when filters change
+  useEffect(() => {
+    const filteredData = getFilteredData(selectedDateRange, selectedCampaign, selectedLanguage);
+    setDashboardData(filteredData);
+    
+    // Log filter statistics for validation
+    const stats = getFilterStatistics(selectedDateRange, selectedCampaign, selectedLanguage);
+    console.log('📊 Filter Applied:', stats);
+  }, [selectedDateRange, selectedCampaign, selectedLanguage]);
+
+  const handleMLAnalysis = () => {
+    setIsAnalyzing(true);
+    
+    // Auto-analyze filtered data
+    setTimeout(() => {
+      const detectedScenario = analyzeDataAndSelectScenario(dashboardData);
+      const mlData = generateMLScenario(detectedScenario);
+      
+      setMlScenario(mlData);
+      setViewMode('ml');
+      setIsAnalyzing(false);
+      
+      // Log ML analysis for validation
+      console.log('🤖 ML Analysis:', {
+        scenario: detectedScenario,
+        model: mlData.mlMetadata.model,
+        confidence: mlData.mlMetadata.confidence,
+        filters: { dateRange: selectedDateRange, campaign: selectedCampaign, language: selectedLanguage }
+      });
+    }, 800); // Simular análisis ML
+  };
+
+  const handleNormalView = () => {
+    setViewMode('normal');
+  };
+
+  const handleClearFilters = () => {
+    setSelectedLanguage('all');
+    setSelectedCampaign('');
+    setSelectedDateRange('Hoy');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+          {/* Title Row */}
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard Analytics</h1>
+              <h1 className="text-3xl font-bold text-gray-900">n8n Analytics</h1>
               <p className="text-sm text-gray-600 mt-1">Panel de análisis de llamadas - Datos en tiempo real</p>
             </div>
             <div className="flex items-center gap-3">
@@ -34,13 +88,45 @@ export default function DashboardBase() {
                   <span className="text-sm font-medium text-green-700">En vivo</span>
                 </div>
               </div>
-              <select className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Últimos 30 días</option>
-                <option>Últimos 7 días</option>
-                <option>Hoy</option>
-                <option>Este mes</option>
-                <option>Todo el tiempo</option>
-              </select>
+            </div>
+          </div>
+          
+          {/* Filters and View Mode Row */}
+          <div className="flex items-center justify-between">
+            <FilterDropdowns
+              selectedLanguage={selectedLanguage}
+              selectedCampaign={selectedCampaign}
+              selectedDateRange={selectedDateRange}
+              onLanguageChange={setSelectedLanguage}
+              onCampaignChange={setSelectedCampaign}
+              onDateRangeChange={setSelectedDateRange}
+              onClear={handleClearFilters}
+            />
+            
+            {/* View Mode Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleNormalView}
+                disabled={isAnalyzing}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  viewMode === 'normal'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                } ${isAnalyzing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                📊 Vista Normal
+              </button>
+              <button
+                onClick={handleMLAnalysis}
+                disabled={isAnalyzing}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  viewMode === 'ml'
+                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                } ${isAnalyzing ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
+              >
+                {isAnalyzing ? '🔄 Analizando...' : '🤖 Análisis ML'}
+              </button>
             </div>
           </div>
         </div>
@@ -49,14 +135,131 @@ export default function DashboardBase() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         
+        {/* ML Analysis View */}
+        {viewMode === 'ml' && mlScenario && (
+          <div className="mb-8">
+            {/* ML Header */}
+            <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-6 text-white mb-6 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">🤖 Análisis ML Automático</h2>
+                  <p className="text-purple-100">
+                    Escenario detectado: <span className="font-bold">{mlScenario.mlMetadata.scenarioName}</span> 
+                    {' • '}Modelo: {mlScenario.mlMetadata.model} 
+                    {' • '}Confianza: {(mlScenario.mlMetadata.confidence * 100).toFixed(0)}%
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                    <div className="text-xs text-purple-100">Predicción ML</div>
+                    <div className="text-sm font-semibold">{mlScenario.mlMetadata.prediction}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ML Insights Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {mlScenario.insights
+                .sort((a: any, b: any) => b.relevancia - a.relevancia)
+                .map((insight: any) => (
+                  <MLInsightCard
+                    key={insight.id}
+                    titulo={insight.titulo}
+                    valor={insight.valor}
+                    descripcion={insight.descripcion}
+                    color={insight.color}
+                    relevancia={insight.relevancia}
+                    mlScore={insight.mlScore}
+                    mlPrediction={insight.mlPrediction}
+                  />
+                ))}
+            </div>
+
+            {/* ML Analysis Charts Section */}
+            <div className="mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Análisis de Debilidades y Predicciones
+              </h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Weakness Heatmap */}
+                {mlScenario.weaknessData && (
+                  <WeaknessHeatmap
+                    data={mlScenario.weaknessData}
+                    title="Mapa de Calor de Debilidades"
+                    subtitle="Áreas con mayor concentración de problemas (ML detectado)"
+                  />
+                )}
+                
+                {/* Problem Concentration */}
+                {mlScenario.problemConcentration && (
+                  <ProblemConcentration
+                    data={mlScenario.problemConcentration}
+                    title="Concentración de Problemas"
+                    subtitle="Distribución de problemas por categoría"
+                  />
+                )}
+              </div>
+
+              {/* Prediction Trends */}
+              {mlScenario.predictionData && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <PredictionTrendChart
+                    data={mlScenario.predictionData.calls}
+                    title="Predicción de Llamadas"
+                    subtitle="Forecast ML próximos 7 días"
+                    currentValue={2847}
+                    predictedValue={mlScenario.predictionData.calls[mlScenario.predictionData.calls.length - 1]?.predicted || 2847}
+                    trend={mlScenario.predictionData.calls[mlScenario.predictionData.calls.length - 1]?.predicted > 2847 ? 'up' : 'down'}
+                  />
+                  
+                  <PredictionTrendChart
+                    data={mlScenario.predictionData.conversion}
+                    title="Predicción de Conversión"
+                    subtitle="Tendencia ML conversión (%)"
+                    currentValue={18.2}
+                    predictedValue={mlScenario.predictionData.conversion[mlScenario.predictionData.conversion.length - 1]?.predicted || 18.2}
+                    trend={mlScenario.predictionData.conversion[mlScenario.predictionData.conversion.length - 1]?.predicted > 18.2 ? 'up' : 'down'}
+                  />
+                  
+                  <PredictionTrendChart
+                    data={mlScenario.predictionData.satisfaction}
+                    title="Predicción de Satisfacción"
+                    subtitle="Forecast ML satisfacción (%)"
+                    currentValue={68.5}
+                    predictedValue={mlScenario.predictionData.satisfaction[mlScenario.predictionData.satisfaction.length - 1]?.predicted || 68.5}
+                    trend={mlScenario.predictionData.satisfaction[mlScenario.predictionData.satisfaction.length - 1]?.predicted > 68.5 ? 'up' : 'down'}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ML Recommendation */}
+            {mlScenario.mlMetadata.recommendation && (
+              <div className="bg-purple-50 border-l-4 border-purple-500 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-purple-900 mb-2">💡 Recomendación del Modelo ML</h3>
+                <p className="text-purple-800">{mlScenario.mlMetadata.recommendation}</p>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Normal View */}
+        {viewMode === 'normal' && (
+          <>
+        
         {/* KPI Cards Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
             title="Total de Llamadas"
-            value={totalCallsData.total.toLocaleString()}
-            subtitle={`${totalCallsData.thisMonth} llamadas este mes`}
+            value={dashboardData.totalCallsData.total.toLocaleString()}
+            subtitle={`${dashboardData.totalCallsData.thisMonth} llamadas este mes`}
             trend="up"
-            trendValue={`+${totalCallsData.percentageChange}% vs mes anterior`}
+            trendValue={`+${dashboardData.totalCallsData.percentageChange}% vs mes anterior`}
             color="blue"
             icon={
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,8 +270,8 @@ export default function DashboardBase() {
           
           <StatCard
             title="Tasa de Respuesta"
-            value={`${responseRateData.responseRate}%`}
-            subtitle={`${responseRateData.answeredCalls} de ${responseRateData.totalCalls} llamadas respondidas`}
+            value={`${dashboardData.responseRateData.responseRate}%`}
+            subtitle={`${dashboardData.responseRateData.answeredCalls} de ${dashboardData.responseRateData.totalCalls} llamadas respondidas`}
             trend="up"
             trendValue="Excelente rendimiento"
             color="green"
@@ -81,10 +284,10 @@ export default function DashboardBase() {
           
           <StatCard
             title="Costo Total"
-            value={`€${totalCostData.totalCost.toFixed(2)}`}
-            subtitle={`€${totalCostData.averageCostPerCall.toFixed(3)} costo promedio por llamada`}
+            value={`€${dashboardData.totalCostData.totalCost.toFixed(2)}`}
+            subtitle={`€${dashboardData.totalCostData.averageCostPerCall.toFixed(3)} costo promedio por llamada`}
             trend="up"
-            trendValue={`+${totalCostData.percentageChange}% vs mes anterior`}
+            trendValue={`+${dashboardData.totalCostData.percentageChange}% vs mes anterior`}
             color="purple"
             icon={
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +299,7 @@ export default function DashboardBase() {
 
         {/* Charts Row 1: Evolution Chart */}
         <div className="mb-8">
-          <CallEvolutionChart data={callEvolutionData} />
+          <CallEvolutionChart data={dashboardData.callEvolutionData} />
         </div>
 
         {/* Charts Row 2: Donut Charts */}
@@ -104,13 +307,13 @@ export default function DashboardBase() {
           <DonutChart
             title="Sentimiento del Usuario"
             subtitle="Distribución de emociones en las llamadas"
-            data={sentimentData}
+            data={dashboardData.sentimentData}
           />
           
           <DonutChart
             title="Motivos de Desconexión"
             subtitle="Razones por las que terminaron las llamadas"
-            data={disconnectReasonsData}
+            data={dashboardData.disconnectReasonsData}
           />
         </div>
 
@@ -119,7 +322,7 @@ export default function DashboardBase() {
           <BarChartComponent
             title="Rendimiento por Agente"
             subtitle="Llamadas y conversiones por modelo"
-            data={agentPerformanceData}
+            data={dashboardData.agentPerformanceData}
             dataKeys={[
               { key: 'agent', name: 'Agente', color: '#3b82f6' },
               { key: 'calls', name: 'Llamadas', color: '#3b82f6' },
@@ -131,7 +334,7 @@ export default function DashboardBase() {
           <BarChartComponent
             title="Costo por Conversión"
             subtitle="Efectividad de inversión por campaña"
-            data={costPerConversionData}
+            data={dashboardData.costPerConversionData}
             dataKeys={[
               { key: 'campaign', name: 'Campaña', color: '#8b5cf6' },
               { key: 'costPerConversion', name: 'Costo por Conversión (€)', color: '#8b5cf6' }
@@ -202,6 +405,9 @@ export default function DashboardBase() {
             </div>
           </div>
         </div>
+        
+        </>
+        )}
 
       </div>
     </div>

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { 
   Activity,
   LogOut,
@@ -49,13 +48,13 @@ export default function N8NDashboardLayout({ children }: N8NDashboardLayoutProps
                   Navegación
                 </h3>
                 <div className="space-y-2">
-                  <Link
-                    href="javascript:history.back()"
-                    className="flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 mx-2 text-gray-300 hover:bg-[#2A2E37]"
+                  <button
+                    onClick={() => window.history.back()}
+                    className="w-full flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 mx-2 text-gray-300 hover:bg-[#2A2E37]"
                   >
                     <ArrowLeft className="h-5 w-5" />
                     Volver
-                  </Link>
+                  </button>
                   <div className="flex items-center gap-2 px-4 py-2 rounded-md mx-2 bg-[#2A2E37] text-blue-400 font-semibold">
                     <Activity className="h-5 w-5" />
                     n8n Analytics
