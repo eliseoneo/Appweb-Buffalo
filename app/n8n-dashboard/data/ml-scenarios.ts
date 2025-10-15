@@ -32,21 +32,33 @@ interface MLChartData {
 
 /**
  * Auto-analyze data and determine best scenario
+ * Context-aware based on date range and data volume
  */
-export function analyzeDataAndSelectScenario(callData: any): MLScenario {
+export function analyzeDataAndSelectScenario(callData: any, context?: { dateRange?: string }): MLScenario {
   const totalCalls = callData.totalCallsData?.total || 0
   const responseRate = callData.responseRateData?.responseRate || 0
   const sentimentPositive = callData.sentimentData?.find((s: any) => s.name === 'Positivo')?.percentage || 0
   const costPerCall = callData.totalCostData?.averageCostPerCall || 0
   
-  // ML Auto-detection logic
-  if (sentimentPositive >= 75 && responseRate >= 85) {
+  // Adjust thresholds based on date range context
+  const dateRange = context?.dateRange || 'Últimos 30 días';
+  const isShortTerm = ['Hoy', 'Ayer'].includes(dateRange);
+  const isMediumTerm = ['Últimos 7 días', 'Este mes'].includes(dateRange);
+  
+  // Adjusted thresholds for smaller datasets
+  let excellentThreshold = isShortTerm ? 70 : 75;
+  let criticalThreshold = isShortTerm ? 40 : 35;
+  let volumeHighThreshold = isShortTerm ? 150 : isMediumTerm ? 1200 : 3500;
+  let volumeLowThreshold = isShortTerm ? 100 : isMediumTerm ? 800 : 1000;
+  
+  // ML Auto-detection logic with context
+  if (sentimentPositive >= excellentThreshold && responseRate >= 85) {
     return 'excellent' // Peak performance
-  } else if (sentimentPositive < 35 || responseRate < 50) {
+  } else if (sentimentPositive < criticalThreshold || responseRate < 50) {
     return 'critical' // Emergency
-  } else if (totalCalls > 3500 && sentimentPositive > 65) {
+  } else if (totalCalls > volumeHighThreshold && sentimentPositive > 65) {
     return 'growth' // Scaling opportunity
-  } else if (totalCalls < 1000 || sentimentPositive < 50) {
+  } else if (totalCalls < volumeLowThreshold || sentimentPositive < 50) {
     return 'decline' // Intervention needed
   } else if (sentimentPositive < 60 || costPerCall > 0.10) {
     return 'warning' // Needs attention
@@ -104,9 +116,21 @@ function generatePredictionTrend(
 }
 
 /**
- * Generate ML scenario data based on type
+ * Generate ML scenario data based on type and context
  */
-export function generateMLScenario(scenario: MLScenario) {
+export function generateMLScenario(scenario: MLScenario, context?: { dateRange?: string, totalCalls?: number }) {
+  const dateRange = context?.dateRange || 'Últimos 30 días';
+  const totalCalls = context?.totalCalls || 2847;
+  
+  // Adjust prediction timeframe based on date range
+  const isShortTerm = ['Hoy', 'Ayer'].includes(dateRange);
+  const isMediumTerm = ['Últimos 7 días', 'Este mes'].includes(dateRange);
+  
+  const predictionDays = isShortTerm ? 10 : isMediumTerm ? 15 : 20;
+  const predictionLabel = isShortTerm ? '2 días' : isMediumTerm ? '7 días' : '14 días';
+  
+  // Scale predictions based on current volume
+  const volumeMultiplier = totalCalls / 2847; // Normalize to base scenario
   const scenarios = {
     excellent: {
       insights: [
@@ -121,7 +145,7 @@ export function generateMLScenario(scenario: MLScenario) {
           icono: 'heart',
           color: 'green',
           mlScore: 0.95,
-          mlPrediction: 'Tendencia al alza predicha para próximos 7 días'
+          mlPrediction: `Tendencia al alza predicha para próximos ${predictionLabel}`
         },
         {
           id: 'conversion-excellent',
@@ -169,9 +193,9 @@ export function generateMLScenario(scenario: MLScenario) {
         { area: 'Duración', score: 85, issues: 5 }
       ],
       predictionData: {
-        calls: generatePredictionTrend(20, 2847, 3520, 'up'),
-        conversion: generatePredictionTrend(20, 35.8, 38.2, 'up'),
-        satisfaction: generatePredictionTrend(20, 85.2, 87.5, 'up')
+        calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 1.24), 'up'),
+        conversion: generatePredictionTrend(predictionDays, 35.8, 38.2, 'up'),
+        satisfaction: generatePredictionTrend(predictionDays, 85.2, 87.5, 'up')
       },
       problemConcentration: [
         { category: 'Calidad de Script', problems: 2, severity: 'low' as const },
@@ -182,8 +206,9 @@ export function generateMLScenario(scenario: MLScenario) {
         model: 'RandomForest',
         confidence: 0.92,
         scenarioName: 'Excelente',
-        prediction: 'Rendimiento superior continuará próximos 14 días',
-        recommendation: 'Mantener estrategia actual, documentar mejores prácticas'
+        prediction: `Rendimiento superior continuará próximos ${predictionLabel}`,
+        recommendation: 'Mantener estrategia actual, documentar mejores prácticas',
+        context: { dateRange, totalCalls, predictionDays }
       }
     },
 
@@ -236,9 +261,9 @@ export function generateMLScenario(scenario: MLScenario) {
         { area: 'Duración', score: 65, issues: 10 }
       ],
       predictionData: {
-        calls: generatePredictionTrend(20, 2847, 2450, 'down'),
-        conversion: generatePredictionTrend(20, 14.2, 12.0, 'down'),
-        satisfaction: generatePredictionTrend(20, 58.3, 52.0, 'down')
+        calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 0.86), 'down'),
+        conversion: generatePredictionTrend(predictionDays, 14.2, 12.0, 'down'),
+        satisfaction: generatePredictionTrend(predictionDays, 58.3, 52.0, 'down')
       },
       problemConcentration: [
         { category: 'Calidad de Servicio', problems: 18, severity: 'high' as const },
@@ -252,7 +277,8 @@ export function generateMLScenario(scenario: MLScenario) {
         confidence: 0.85,
         scenarioName: 'Advertencia',
         prediction: 'Requiere atención - métricas en descenso',
-        recommendation: 'Revisar calidad de servicio y optimizar procesos'
+        recommendation: 'Revisar calidad de servicio y optimizar procesos',
+        context: { dateRange, totalCalls, predictionDays }
       }
     },
 
@@ -305,9 +331,9 @@ export function generateMLScenario(scenario: MLScenario) {
         { area: 'Duración', score: 22, issues: 42 }
       ],
       predictionData: {
-        calls: generatePredictionTrend(20, 1234, 850, 'down'),
-        conversion: generatePredictionTrend(20, 4.8, 2.5, 'down'),
-        satisfaction: generatePredictionTrend(20, 32.1, 18.0, 'down')
+        calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 0.69), 'down'),
+        conversion: generatePredictionTrend(predictionDays, 4.8, 2.5, 'down'),
+        satisfaction: generatePredictionTrend(predictionDays, 32.1, 18.0, 'down')
       },
       problemConcentration: [
         { category: 'Calidad de Servicio', problems: 52, severity: 'high' as const },
@@ -321,7 +347,8 @@ export function generateMLScenario(scenario: MLScenario) {
         confidence: 0.94,
         scenarioName: 'Crítico',
         prediction: '🚨 ALERTA CRÍTICA - Requiere intervención ejecutiva inmediata',
-        recommendation: 'Pausar operaciones, revisar todo el proceso, capacitación urgente'
+        recommendation: 'Pausar operaciones, revisar todo el proceso, capacitación urgente',
+        context: { dateRange, totalCalls, predictionDays }
       }
     },
 
@@ -373,9 +400,9 @@ export function generateMLScenario(scenario: MLScenario) {
         { area: 'Capacidad', score: 35, issues: 42 }
       ],
       predictionData: {
-        calls: generatePredictionTrend(20, 3890, 5520, 'up'),
-        conversion: generatePredictionTrend(20, 26.8, 28.5, 'up'),
-        satisfaction: generatePredictionTrend(20, 72.0, 75.0, 'up')
+        calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 1.42), 'up'),
+        conversion: generatePredictionTrend(predictionDays, 26.8, 28.5, 'up'),
+        satisfaction: generatePredictionTrend(predictionDays, 72.0, 75.0, 'up')
       },
       problemConcentration: [
         { category: 'Capacidad Insuficiente', problems: 42, severity: 'high' as const },
@@ -388,7 +415,8 @@ export function generateMLScenario(scenario: MLScenario) {
         confidence: 0.92,
         scenarioName: 'Crecimiento',
         prediction: 'Oportunidad de crecimiento - escalar rápido',
-        recommendation: 'Contratar 3-5 agentes, aumentar capacidad 40%'
+        recommendation: 'Contratar 3-5 agentes, aumentar capacidad 40%',
+        context: { dateRange, totalCalls, predictionDays }
       }
     },
 
@@ -428,9 +456,9 @@ export function generateMLScenario(scenario: MLScenario) {
         { area: 'Retención', score: 28, issues: 35 }
       ],
       predictionData: {
-        calls: generatePredictionTrend(20, 782, 520, 'down'),
-        conversion: generatePredictionTrend(20, 12.5, 8.2, 'down'),
-        satisfaction: generatePredictionTrend(20, 51.2, 38.0, 'down')
+        calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 0.665), 'down'),
+        conversion: generatePredictionTrend(predictionDays, 12.5, 8.2, 'down'),
+        satisfaction: generatePredictionTrend(predictionDays, 51.2, 38.0, 'down')
       },
       problemConcentration: [
         { category: 'Pérdida de Clientes', problems: 35, severity: 'high' as const },
@@ -444,7 +472,8 @@ export function generateMLScenario(scenario: MLScenario) {
         confidence: 0.91,
         scenarioName: 'Declive',
         prediction: 'Declive continuo predicho - acción correctiva urgente',
-        recommendation: 'Análisis competitivo, mejora de calidad, campaña de retención'
+        recommendation: 'Análisis competitivo, mejora de calidad, campaña de retención',
+        context: { dateRange, totalCalls, predictionDays }
       }
     },
 
@@ -507,9 +536,9 @@ export function generateMLScenario(scenario: MLScenario) {
         { area: 'Duración', score: 78, issues: 6 }
       ],
       predictionData: {
-        calls: generatePredictionTrend(20, 2847, 2920, 'stable'),
-        conversion: generatePredictionTrend(20, 18.2, 19.5, 'up'),
-        satisfaction: generatePredictionTrend(20, 68.5, 72.0, 'up')
+        calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 1.026), 'stable'),
+        conversion: generatePredictionTrend(predictionDays, 18.2, 19.5, 'up'),
+        satisfaction: generatePredictionTrend(predictionDays, 68.5, 72.0, 'up')
       },
       problemConcentration: [
         { category: 'Optimización de Scripts', problems: 10, severity: 'medium' as const },
@@ -523,7 +552,8 @@ export function generateMLScenario(scenario: MLScenario) {
         confidence: 0.79,
         scenarioName: 'Balanceado',
         prediction: 'Operaciones normales - oportunidades de optimización menores',
-        recommendation: 'Mantener curso actual, experimentar con mejoras incrementales'
+        recommendation: 'Mantener curso actual, experimentar con mejoras incrementales',
+        context: { dateRange, totalCalls, predictionDays }
       }
     }
   }

@@ -41,21 +41,32 @@ export default function DashboardBase() {
   const handleMLAnalysis = () => {
     setIsAnalyzing(true);
     
-    // Auto-analyze filtered data
+    // Auto-analyze filtered data with context
     setTimeout(() => {
-      const detectedScenario = analyzeDataAndSelectScenario(dashboardData);
-      const mlData = generateMLScenario(detectedScenario);
+      const context = {
+        dateRange: selectedDateRange,
+        totalCalls: dashboardData.totalCallsData.total
+      };
+      
+      const detectedScenario = analyzeDataAndSelectScenario(dashboardData, context);
+      const mlData = generateMLScenario(detectedScenario, context);
       
       setMlScenario(mlData);
       setViewMode('ml');
       setIsAnalyzing(false);
       
       // Log ML analysis for validation
-      console.log('🤖 ML Analysis:', {
+      console.log('🤖 ML Analysis (Context-Aware):', {
         scenario: detectedScenario,
         model: mlData.mlMetadata.model,
         confidence: mlData.mlMetadata.confidence,
-        filters: { dateRange: selectedDateRange, campaign: selectedCampaign, language: selectedLanguage }
+        filters: { 
+          dateRange: selectedDateRange, 
+          campaign: selectedCampaign, 
+          language: selectedLanguage 
+        },
+        context: mlData.mlMetadata.context,
+        predictionTimeframe: mlData.mlMetadata.context.predictionDays + ' días'
       });
     }, 800); // Simular análisis ML
   };
@@ -206,33 +217,33 @@ export default function DashboardBase() {
               </div>
 
               {/* Prediction Trends */}
-              {mlScenario.predictionData && (
+              {mlScenario.predictionData && mlScenario.mlMetadata.context && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <PredictionTrendChart
                     data={mlScenario.predictionData.calls}
                     title="Predicción de Llamadas"
-                    subtitle="Forecast ML próximos 7 días"
-                    currentValue={2847}
-                    predictedValue={mlScenario.predictionData.calls[mlScenario.predictionData.calls.length - 1]?.predicted || 2847}
-                    trend={mlScenario.predictionData.calls[mlScenario.predictionData.calls.length - 1]?.predicted > 2847 ? 'up' : 'down'}
+                    subtitle={`Forecast ML próximos ${mlScenario.mlMetadata.context.predictionDays} días`}
+                    currentValue={dashboardData.totalCallsData.total}
+                    predictedValue={mlScenario.predictionData.calls[mlScenario.predictionData.calls.length - 1]?.predicted || dashboardData.totalCallsData.total}
+                    trend={mlScenario.predictionData.calls[mlScenario.predictionData.calls.length - 1]?.predicted > dashboardData.totalCallsData.total ? 'up' : mlScenario.predictionData.calls[mlScenario.predictionData.calls.length - 1]?.predicted < dashboardData.totalCallsData.total ? 'down' : 'stable'}
                   />
                   
                   <PredictionTrendChart
                     data={mlScenario.predictionData.conversion}
                     title="Predicción de Conversión"
-                    subtitle="Tendencia ML conversión (%)"
+                    subtitle={`Tendencia ML próximos ${mlScenario.mlMetadata.context.predictionDays} días`}
                     currentValue={18.2}
                     predictedValue={mlScenario.predictionData.conversion[mlScenario.predictionData.conversion.length - 1]?.predicted || 18.2}
-                    trend={mlScenario.predictionData.conversion[mlScenario.predictionData.conversion.length - 1]?.predicted > 18.2 ? 'up' : 'down'}
+                    trend={mlScenario.predictionData.conversion[mlScenario.predictionData.conversion.length - 1]?.predicted > 18.2 ? 'up' : mlScenario.predictionData.conversion[mlScenario.predictionData.conversion.length - 1]?.predicted < 18.2 ? 'down' : 'stable'}
                   />
                   
                   <PredictionTrendChart
                     data={mlScenario.predictionData.satisfaction}
                     title="Predicción de Satisfacción"
-                    subtitle="Forecast ML satisfacción (%)"
+                    subtitle={`Forecast ML próximos ${mlScenario.mlMetadata.context.predictionDays} días`}
                     currentValue={68.5}
                     predictedValue={mlScenario.predictionData.satisfaction[mlScenario.predictionData.satisfaction.length - 1]?.predicted || 68.5}
-                    trend={mlScenario.predictionData.satisfaction[mlScenario.predictionData.satisfaction.length - 1]?.predicted > 68.5 ? 'up' : 'down'}
+                    trend={mlScenario.predictionData.satisfaction[mlScenario.predictionData.satisfaction.length - 1]?.predicted > 68.5 ? 'up' : mlScenario.predictionData.satisfaction[mlScenario.predictionData.satisfaction.length - 1]?.predicted < 68.5 ? 'down' : 'stable'}
                   />
                 </div>
               )}
