@@ -1,0 +1,90 @@
+[
+{"id":"01dcd33b-bb67-4cba-a0f4-518752c83381",
+"columnas":[
+
+"{\"nombre\":\"id\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Identificador único de la llamada, con un formato específico como CALL_1756982566330_9jpc9pg2v_kyn23tpqc_613062.\"}",
+
+"{\"nombre\":\"id_llamada\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Identificador único de la llamada, con un formato específico como call_b12f0d7bbdf6926ecbc37b5aa48.\"}"
+
+,"{\"nombre\":\"agent_name\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Nombre del agente o el contexto de la llamada. Puede ser 'DEMO V2 PLANETA' (llamada saliente), 'Si llaman a EAE' (llamada entrante) o 'Llamar mas tarde al lead' (llamada saliente programada).\"}"
+
+,"{\"nombre\":\"agent_id\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Identificador único del agente, como agent_cca57189945925f90c98bd578a.\"}"
+
+,"{\"nombre\":\"duracion_ms\",\"tipo\":\"INTEGER\",\"descripcion\":\"Duración de la llamada en segundos.\"}","{\"nombre\":\"fecha_inicio\",\"tipo\":\"TIMESTAMP\",\"descripcion\":\"Fecha y hora exacta en que la llamada comenzó.\"}"
+,"{\"nombre\":\"fecha_final\",\"tipo\":\"TIMESTAMP\",\"descripcion\":\"Fecha y hora exacta en que la llamada finalizó.\"}"
+
+,"{\"nombre\":\"razon_desconexion\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Motivo de la desconexión de la llamada, categorizado como 'usuario cuelga', 'agente cuelga', 'no hay respuesta', 'ocupado' o 'tiempo maximo'.\"}"
+
+,"{\"nombre\":\"sentimiento\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Sentimiento del usuario durante la llamada. Puede ser 'Negative', 'Positive', 'Neutral' o 'Unknown' (equivalente a Neutral).\"}",
+
+"{\"nombre\":\"coste_total\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Costo total de la llamada en euros.\"}",
+
+"{\"nombre\":\"coste_voice\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Costo de la voz de la llamada. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"cost_llm\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Costo del LLM (Large Language Model) utilizado. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"cost_knowledge\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Costo del conocimiento utilizado. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"llm_tockens\",\"tipo\":\"INTEGER\",\"descripcion\":\"Número de tokens del LLM. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"latency:total\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Latencia total. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"latency_e2e\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Latencia de extremo a extremo. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"latency_llm\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Latencia del LLM. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"latency_tts\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Latencia de Text-to-Speech. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"latency_kb\",\"tipo\":\"DECIMAL(10,2)\",\"descripcion\":\"Latencia de la base de conocimiento. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"lead name\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Nombre del usuario asociado a la llamada.\"}",
+
+"{\"nombre\":\"voicemail\",\"tipo\":\"BOOLEAN\",\"descripcion\":\"Indica si se dejó un mensaje de voz. Puede ser TRUE, FALSE o NULL. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"entrevista\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Estado de interés en una entrevista. Puede ser 'Calificado > Quiere entrevista', 'no se ha proporcionado esta info', 'Sin interes' o 'No se puede contactar'.\"}",
+
+"{\"nombre\":\"Situacion_laboral\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Situación laboral del usuario. Puede ser 'Sí' (trabajando), 'No' (no trabajando), 'no se ha proporcionado esta info' o 'NULL' (no se pudo contactar).\"}",
+
+"{\"nombre\":\"Antigüedad_laboral\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Antigüedad laboral del usuario. Puede ser '<1 año', '1 año – 3 años', '3 años – 10 años', '>10 años', 'NULL' (no se pudo contactar) o 'no se ha proporcionado esta info'.\"}",
+
+"{\"nombre\":\"nivel_estudios\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Nivel de estudios del usuario. Puede ser 'Estudios superiores', 'Bachillerato', 'Sin estudios oficiales', 'Estudios secundarios', 'NULL' (no se pudo contactar) o 'no se ha proporcionado esta info'.\"}",
+
+"{\"nombre\":\"turno_contacto\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Turno preferido para el contacto. Puede ser 'Tarde', 'Mañana', 'Mediodía' (equivalente a Tarde), 'NULL' (no se pudo contactar) o 'no se ha proporcionado esta info'.\"}",
+
+"{\"nombre\":\"cargo\",\"tipo\":\"VARCHAR(255)\",\"descripcion\":\"Cargo del usuario. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"observaciones\",\"tipo\":\"TEXT\",\"descripcion\":\"Observaciones adicionales. No relevante para el análisis.\"}",
+
+"{\"nombre\":\"transcripcion\",\"tipo\":\"TEXT\",\"descripcion\":\"Transcripción de la llamada. No relevante para el análisis.\"}"],
+
+
+
+"kpis":["{\"titulo\":\"Número total de llamadas\",\"descripcion\":\"Muestra el número total de llamadas registradas en el dataset. Es una métrica fundamental para entender el volumen de actividad.\",\"tipo_grafico\":\"individual\",\"num_inputs\":1,\"inputs\":[\"id\"],\"ejemplo\":\"Un número grande que representa el total de llamadas.\"}",
+
+"{\"titulo\":\"Duración media de las llamadas\",\"descripcion\":\"Calcula la duración promedio de las llamadas en segundos. Permite evaluar la eficiencia y la extensión de las interacciones.\",\"tipo_grafico\":\"individual\",\"num_inputs\":1,\"inputs\":[\"duracion_ms\"],\"ejemplo\":\"Un valor numérico como '120 segundos'.\"}",
+
+"{\"titulo\":\"Costo total de las llamadas\",\"descripcion\":\"Suma el costo total de todas las llamadas en euros. Proporciona una visión general del gasto asociado a las comunicaciones.\",\"tipo_grafico\":\"individual\",\"num_inputs\":1,\"inputs\":[\"coste_total\"],\"ejemplo\":\"Un valor monetario como '€ 1500.50'.\"}",
+
+"{\"titulo\":\"Evolución del número de llamadas por día\",\"descripcion\":\"Muestra cómo el volumen de llamadas ha cambiado a lo largo del tiempo, agrupado por día. Útil para identificar tendencias y picos de actividad.\",\"tipo_grafico\":\"linea\",\"num_inputs\":1,\"inputs\":[\"fecha_inicio\"],\"ejemplo\":\"Una línea que sube y baja mostrando el número de llamadas por cada día.\"}",
+
+"{\"titulo\":\"Evolución de la duración media de las llamadas por día\",\"descripcion\":\"Representa la duración promedio de las llamadas a lo largo del tiempo. Permite detectar si las interacciones se están volviendo más largas o más cortas.\",\"tipo_grafico\":\"linea\",\"num_inputs\":1,\"inputs\":[\"fecha_inicio\",\"duracion_ms\"],\"ejemplo\":\"Una línea que muestra la duración media de las llamadas por día.\"}",
+
+"{\"titulo\":\"Distribución de motivos de desconexión\",\"descripcion\":\"Muestra la frecuencia de cada motivo por el cual las llamadas se desconectan. Ayuda a identificar problemas comunes o áreas de mejora en el proceso de llamada.\",\"tipo_grafico\":\"barras_vertical\",\"num_inputs\":5,\"inputs\":[\"razon_desconexion\"],\"ejemplo\":\"Barras que comparan 'usuario cuelga', 'agente cuelga', 'no hay respuesta', 'ocupado', 'tiempo maximo'.\"}",
+
+"{\"titulo\":\"Sentimiento del usuario en las llamadas\",\"descripcion\":\"Proporción de los diferentes sentimientos expresados por los usuarios durante las llamadas. Permite evaluar la satisfacción general del cliente.\",\"tipo_grafico\":\"donut\",\"num_inputs\":4,\"inputs\":[\"sentimiento\"],\"ejemplo\":\"Un gráfico de donut con secciones para 'Positive', 'Negative', 'Neutral' y 'Unknown'.\"}",
+
+"{\"titulo\":\"Distribución de agentes por número de llamadas\",\"descripcion\":\"Compara el número de llamadas gestionadas por cada agente. Útil para evaluar la carga de trabajo y el rendimiento individual de los agentes.\",\"tipo_grafico\":\"barras_horizontal\",\"num_inputs\":3,\"inputs\":[\"agent_name\"],\"ejemplo\":\"Barras horizontales que muestran el conteo de llamadas para 'DEMO V2 PLANETA', 'Si llaman a EAE', 'Llamar mas tarde al lead'.\"}",
+
+"{\"titulo\":\"Estado de interés en entrevista\",\"descripcion\":\"Muestra la distribución de los resultados de las llamadas en relación con la consecución de una entrevista. Permite evaluar la efectividad de las llamadas para generar leads calificados.\",\"tipo_grafico\":\"donut\",\"num_inputs\":4,\"inputs\":[\"entrevista\"],\"ejemplo\":\"Un gráfico de donut con secciones para 'Calificado > Quiere entrevista', 'no se ha proporcionado esta info', 'Sin interes', 'No se puede contactar'.\"}",
+
+"{\"titulo\":\"Situación laboral de los usuarios contactados\",\"descripcion\":\"Proporción de usuarios que trabajan o no trabajan, según la información recopilada. Útil para segmentar la audiencia y entender el perfil de los contactos.\",\"tipo_grafico\":\"donut\",\"num_inputs\":4,\"inputs\":[\"Situacion_laboral\"],\"ejemplo\":\"Un gráfico de donut con secciones para 'Sí', 'No', 'no se ha proporcionado esta info', 'NULL'.\"}",
+
+"{\"titulo\":\"Antigüedad laboral de los usuarios contactados\",\"descripcion\":\"Distribución de la antigüedad laboral de los usuarios. Permite entender la experiencia profesional de la base de contactos.\",\"tipo_grafico\":\"barras_horizontal\",\"num_inputs\":5,\"inputs\":[\"Antigüedad_laboral\"],\"ejemplo\":\"Barras horizontales para '<1 año', '1 año – 3 años', '3 años – 10 años', '>10 años', 'NULL', 'no se ha proporcionado esta info'.\"}",
+
+"{\"titulo\":\"Nivel de estudios de los usuarios contactados\",\"descripcion\":\"Distribución del nivel de estudios de los usuarios. Ayuda a perfilar demográficamente a los contactos.\",\"tipo_grafico\":\"barras_horizontal\",\"num_inputs\":6,\"inputs\":[\"nivel_estudios\"],\"ejemplo\":\"Barras horizontales para 'Estudios superiores', 'Bachillerato', 'Sin estudios oficiales', 'Estudios secundarios', 'NULL', 'no se ha proporcionado esta info'.\"}",
+
+"{\"titulo\":\"Preferencia de turno de contacto\",\"descripcion\":\"Muestra la distribución de los turnos preferidos por los usuarios para ser contactados. Útil para optimizar la planificación de llamadas.\",\"tipo_grafico\":\"donut\",\"num_inputs\":4,\"inputs\":[\"turno_contacto\"],\"ejemplo\":\"Un gráfico de donut con secciones para 'Tarde', 'Mañana', 'Mediodía', 'NULL', 'no se ha proporcionado esta info'.\"}"
+]},
+
+
+

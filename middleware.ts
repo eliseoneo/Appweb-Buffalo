@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
   // Verificar token simple
   if (token === 'admin-token-123') {
     console.log('✅ Token admin válido')
-    if (pathname.startsWith('/admin')) {
+    if (pathname.startsWith('/admin') || pathname.startsWith('/n8n-dashboard')) {
       return NextResponse.next()
     } else {
       return NextResponse.redirect(new URL('/admin', request.url))
@@ -34,7 +34,7 @@ export function middleware(request: NextRequest) {
 
   if (token === 'cliente-token-123') {
     console.log('✅ Token cliente válido')
-    if (pathname.startsWith('/cliente') || pathname.startsWith('/clientes/')) {
+    if (pathname.startsWith('/cliente') || pathname.startsWith('/clientes/') || pathname.startsWith('/n8n-dashboard')) {
       return NextResponse.next()
     } else {
       // Redirigir al dashboard del cliente por defecto

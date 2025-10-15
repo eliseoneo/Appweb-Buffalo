@@ -1,0 +1,98 @@
+{
+  "fieldMappings": {
+    "id": "id",
+    "id_llamada": "id_llamada",
+    "agent_name": "agent_name",
+    "agent_id": "agent_id",
+    "duration_ms": "duracion_ms",
+    "fecha_inicio": "fecha_inicio",
+    "fecha_final": "fecha_final",
+    "razon_desconexion": "razon_desconexion",
+    "sentimiento": "sentimiento",
+    "coste_total": "coste_total",
+    "cost_voice": "coste_voice",
+    "cost_llm": "cost_llm",
+    "cost_knowledge": "cost_knowledge",
+    "llm_tockens": "llm_tockens",
+    "latency_total": "latency:total",
+    "latency_e2e": "latency_e2e",
+    "latency_llm": "latency_llm",
+    "latency_tts": "latency_tts",
+    "latency_kb": "latency_kb",
+    "lead_name": "lead name",
+    "voicemail": "voicemail",
+    "entrevista": "entrevista",
+    "situacion_laboral": "Situacion_laboral",
+    "antigüedad_laboral": "Antigüedad_laboral",
+    "nivel_estudios": "nivel_estudios",
+    "turno_contacto": "turno_contacto",
+    "cargo": "cargo",
+    "observaciones": "observaciones",
+    "transcripción": "transcripcion",
+    "campaña": "campaña",
+    "MODEL": "modelo"
+  },
+  "valueTransformations": {
+    "razon_desconexion": {
+      "user_hangup": "usuario cuelga",
+      "agent_hangup": "agente cuelga",
+      "no_answer": "no hay respuesta",
+      "busy": "ocupado",
+      "voicemail_reached": "tiempo maximo",
+      "max_duration": "tiempo maximo"
+    },
+    "sentimiento": {
+      "Positive": "Positive",
+      "Negative": "Negative",
+      "Neutral": "Neutral",
+      "Unknown": "Neutral"
+    },
+    "entrevista": {
+      "qualified": "Calificado > Quiere entrevista",
+      "not_provided": "no se ha proporcionado esta info",
+      "no_interest": "Sin interes",
+      "cannot_contact": "No se puede contactar"
+    },
+    "Situacion_laboral": {
+      "yes": "Sí",
+      "no": "No",
+      "null": "NULL",
+      "not_provided": "no se ha proporcionado esta info"
+    }
+  },
+  "typeConversions": {
+    "duracion_ms": "float",
+    "coste_total": "float",
+    "coste_voice": "float",
+    "cost_llm": "float",
+    "cost_knowledge": "float",
+    "llm_tockens": "integer",
+    "latency:total": "float",
+    "latency_e2e": "float",
+    "latency_llm": "float",
+    "latency_tts": "float",
+    "latency_kb": "float",
+    "fecha_inicio": "timestamp",
+    "fecha_final": "timestamp",
+    "voicemail": "boolean"
+  },
+  "requiredFields": [
+    "id",
+    "id_llamada",
+    "agent_name",
+    "agent_id",
+    "fecha_inicio"
+  ],
+  "defaultValues": {
+    "duracion_ms": 0,
+    "coste_total": 0.0,
+    "sentimiento": "Neutral",
+    "voicemail": false,
+    "entrevista": "no se ha proporcionado esta info",
+    "Situacion_laboral": "no se ha proporcionado esta info",
+    "Antigüedad_laboral": "no se ha proporcionado esta info",
+    "nivel_estudios": "no se ha proporcionado esta info",
+    "turno_contacto": "no se ha proporcionado esta info"
+  }
+}
+

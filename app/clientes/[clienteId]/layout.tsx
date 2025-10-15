@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   BarChart3,
-  Brain
+  Brain,
+  Activity
 } from 'lucide-react'
 
 interface ClienteLayoutProps {
@@ -177,6 +178,22 @@ export default function ClienteLayout({ children }: ClienteLayoutProps) {
                   </div>
                 </div>
               ))}
+              
+              {/* Sistema - n8n Dashboard */}
+              <div className="mb-6">
+                <h3 className="uppercase text-xs font-bold text-gray-400 px-4 mt-6 mb-2">
+                  Sistema
+                </h3>
+                <div className="space-y-2">
+                  <a
+                    href="/n8n-dashboard"
+                    className="flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 mx-2 text-gray-300 hover:bg-[#2A2E37]"
+                  >
+                    <Activity className="h-5 w-5" />
+                    n8n Analytics
+                  </a>
+                </div>
+              </div>
             </nav>
           </div>
 
@@ -235,6 +252,22 @@ export default function ClienteLayout({ children }: ClienteLayoutProps) {
                   </div>
                 </div>
               ))}
+              
+              {/* Sistema - n8n Dashboard */}
+              <div className="mb-6">
+                <h3 className="uppercase text-xs font-bold text-gray-400 px-4 mt-6 mb-2">
+                  Sistema
+                </h3>
+                <div className="space-y-2">
+                  <a
+                    href="/n8n-dashboard"
+                    className="flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 mx-2 text-gray-300 hover:bg-[#2A2E37]"
+                  >
+                    <Activity className="h-5 w-5" />
+                    n8n Analytics
+                  </a>
+                </div>
+              </div>
             </nav>
           </div>
 
