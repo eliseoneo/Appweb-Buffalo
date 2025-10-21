@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Plus, 
@@ -551,6 +551,20 @@ export default function CrearClientePage() {
   const [kpiLoading, setKpiLoading] = useState(false)
   const [kpiGenerated, setKpiGenerated] = useState(false)
   const [kpiData, setKpiData] = useState<any>(null)
+  
+  // Generar UUID del cliente al inicio
+  const [clienteId] = useState(() => {
+    const id = crypto.randomUUID()
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔑 GENERACIÓN DE UUID DEL CLIENTE')
+    console.log('📍 Ubicación: Línea ~556 - useState initialization')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('✅ UUID generado:', id)
+    console.log('💡 Este UUID se usará en lugar de formData.usuario')
+    console.log('💡 Será enviado como cliente_id en webhooks (AI, KPIs)')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    return id
+  })
 
   const [formData, setFormData] = useState<any>({
     nombreEmpresa: '',
@@ -577,6 +591,39 @@ export default function CrearClientePage() {
     },
     columnasPostgres: [] as any[]
   })
+
+  // Log inicial al cargar el componente
+  useEffect(() => {
+    console.log('🎬 === PÁGINA CREAR CLIENTE INICIADA ===')
+    console.log('🔑 UUID del Cliente:', clienteId)
+    console.log('📍 Paso actual:', currentStep)
+    console.log('📊 Total de pasos:', totalSteps)
+    console.log('📋 FormData inicial:', formData)
+    console.log('')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📝 RESUMEN DE CAMBIOS IMPLEMENTADOS:')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('1️⃣ UUID del Cliente:')
+    console.log('   ❌ Antes: Generado en handleSubmit() con Date.now()')
+    console.log('   ✅ Ahora: Generado al inicio con crypto.randomUUID()')
+    console.log('   📍 Ubicación: Línea ~556')
+    console.log('')
+    console.log('2️⃣ cliente_id en AI Webhook:')
+    console.log('   ❌ Antes: formData.usuario || "nuevo_cliente"')
+    console.log('   ✅ Ahora: clienteId (UUID)')
+    console.log('   📍 Ubicación: Línea ~705')
+    console.log('')
+    console.log('3️⃣ cliente_id en KPIs Webhook:')
+    console.log('   ❌ Antes: NO se enviaba cliente_id')
+    console.log('   ✅ Ahora: clienteId (UUID) incluido en payload')
+    console.log('   📍 Ubicación: Línea ~866')
+    console.log('')
+    console.log('4️⃣ Columnas PostgreSQL:')
+    console.log('   ❌ Antes: ID con Date.now() o ai_${Date.now()}_${index}')
+    console.log('   ✅ Ahora: crypto.randomUUID()')
+    console.log('   📍 Ubicación: Líneas ~640, ~750')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  }, [])
 
   // Opciones de tipo de cliente basadas en los partnerships existentes
   const tiposCliente = [
@@ -628,8 +675,11 @@ export default function CrearClientePage() {
 
   // Funciones para manejar columnas de PostgreSQL
   const addColumna = () => {
+    const columnaId = crypto.randomUUID()
+    console.log('🔑 UUID generado para columna manual:', columnaId)
+    
     const nuevaColumna = {
-      id: Date.now().toString(),
+      id: columnaId,
       nombre: '',
       tipo: 'VARCHAR(255)',
       descripcion: ''
@@ -666,6 +716,11 @@ export default function CrearClientePage() {
 
   // Función para generar columnas con IA
   const generarColumnasConIA = async () => {
+    console.log('🚀 === INICIO generarColumnasConIA ===')
+    console.log('📝 AI Prompt (raw):', aiPrompt)
+    console.log('🔑 Cliente ID (UUID):', clienteId)
+    console.log('👤 Usuario:', formData.usuario)
+    
     if (!aiPrompt.trim()) {
       setError('Por favor, describe las columnas que necesitas')
       return
@@ -676,9 +731,22 @@ export default function CrearClientePage() {
 
     const payload = {
       prompt: aiPrompt,
-      cliente_id: formData.usuario || 'nuevo_cliente',
+      cliente_id: clienteId,  // ✅ CAMBIO: Antes usaba formData.usuario, ahora usa UUID
       timestamp: new Date().toISOString()
     }
+
+    console.log('📤 AI Columns - Payload enviado:', payload)
+    console.log('📤 AI Columns - Payload JSON:', JSON.stringify(payload, null, 2))
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔄 CAMBIO IMPLEMENTADO EN: generarColumnasConIA()')
+    console.log('📍 Línea ~705: cliente_id value')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('❌ ANTES: cliente_id = formData.usuario || "nuevo_cliente"')
+    console.log('   Valor:', formData.usuario || 'nuevo_cliente')
+    console.log('')
+    console.log('✅ AHORA: cliente_id = clienteId (UUID)')
+    console.log('   Valor:', clienteId)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
     try {
       const response = await fetch('https://n8n.agenciabuffalo.es/webhook/4929eca1-03c9-4847-bece-ba410c5ecb0c', {
@@ -689,32 +757,65 @@ export default function CrearClientePage() {
         body: JSON.stringify(payload)
       })
 
+      console.log('📡 AI Columns - Response status:', response.status, response.statusText)
+
       if (!response.ok) {
         const errorText = await response.text()
+        console.error('❌ AI Columns - Error response:', errorText)
         throw new Error(`Error del servidor: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('📥 AI Columns - Data recibida (raw):', data)
+      console.log('📥 AI Columns - Data JSON:', JSON.stringify(data, null, 2))
+      console.log('📥 AI Columns - Data type:', Array.isArray(data) ? 'Array' : typeof data)
+      console.log('📥 AI Columns - Array length:', Array.isArray(data) ? data.length : 'N/A')
       
       // Manejar la estructura del webhook: array con objeto que contiene success y columnas
       let columnasData = null
       
       if (Array.isArray(data) && data.length > 0) {
-        // Si es un array, tomar el primer elemento
+        console.log('✅ Detectado formato Array - tomando primer elemento')
         columnasData = data[0]
+        console.log('📦 data[0]:', columnasData)
       } else if (data.success && data.columnas) {
-        // Si es un objeto directo
+        console.log('✅ Detectado formato Objeto directo')
         columnasData = data
+      } else {
+        console.warn('⚠️ No se detectó ningún formato válido')
       }
       
+      console.log('🔍 AI Columns - columnasData parseada:', columnasData)
+      console.log('🔍 AI Columns - columnasData.success:', columnasData?.success)
+      console.log('🔍 AI Columns - columnasData.columnas:', columnasData?.columnas)
+      console.log('🔍 AI Columns - columnas es Array?:', Array.isArray(columnasData?.columnas))
+      
       if (columnasData && columnasData.success && columnasData.columnas && Array.isArray(columnasData.columnas)) {
+        console.log('✅ VALIDACIÓN EXITOSA - Procesando columnas...')
+        console.log('📊 Número de columnas recibidas:', columnasData.columnas.length)
+        
         // Convertir las columnas de la IA al formato esperado
-        const columnasGeneradas = columnasData.columnas.map((col: any, index: number) => ({
-          id: `ai_${Date.now()}_${index}`,
-          nombre: col.nombre || `columna_${index + 1}`,
-          tipo: col.tipo || 'VARCHAR(255)',
-          descripcion: col.descripcion || ''
-        }))
+        const columnasGeneradas = columnasData.columnas.map((col: any, index: number) => {
+          const columnaId = crypto.randomUUID()
+          
+          console.log(`  ➡️ Columna ${index + 1}:`, {
+            id: columnaId,
+            nombre: col.nombre,
+            tipo: col.tipo,
+            descripcion: col.descripcion
+          })
+          
+          return {
+            id: columnaId,
+            nombre: col.nombre || `columna_${index + 1}`,
+            tipo: col.tipo || 'VARCHAR(255)',
+            descripcion: col.descripcion || ''
+          }
+        })
+
+        console.log('✅ AI Columns - Columnas generadas (completo):', columnasGeneradas)
+        console.log('✅ AI Columns - Total columnas generadas:', columnasGeneradas.length)
+        console.log('🔑 AI Columns - Todas las columnas usan UUID como ID')
 
         // Reemplazar las columnas existentes con las generadas por IA
         setFormData((prev: any) => ({
@@ -722,34 +823,69 @@ export default function CrearClientePage() {
           columnasPostgres: columnasGeneradas
         }))
 
+        console.log('💾 Estado actualizado - formData.columnasPostgres actualizado')
+        
         setSuccess(`¡Excelente! Se generaron ${columnasGeneradas.length} columnas automáticamente con IA`)
         setAiPrompt('') // Limpiar el prompt
+        
+        console.log('🎉 === FIN generarColumnasConIA (EXITOSO) ===')
         
         // Mostrar mensaje de éxito por 5 segundos
         setTimeout(() => {
           setSuccess('')
         }, 5000)
       } else {
+        console.error('❌ AI Columns - Formato inválido. columnasData:', columnasData)
+        console.error('❌ AI Columns - Validación fallida:')
+        console.error('   - columnasData existe?:', !!columnasData)
+        console.error('   - columnasData.success?:', columnasData?.success)
+        console.error('   - columnasData.columnas existe?:', !!columnasData?.columnas)
+        console.error('   - columnas es Array?:', Array.isArray(columnasData?.columnas))
         throw new Error('Formato de respuesta inválido del servicio de IA')
       }
     } catch (error: any) {
+      console.error('❌ AI Columns - Error capturado:', error)
+      console.error('❌ AI Columns - Error message:', error.message)
+      console.error('❌ AI Columns - Error stack:', error.stack)
+      console.error('💥 === FIN generarColumnasConIA (ERROR) ===')
       setError(`Error al generar columnas con IA: ${error.message || 'Error desconocido'}`)
     } finally {
+      console.log('🔄 AI Loading set to false')
       setAiLoading(false)
     }
   }
 
   // Función para generar KPIs
   const generarKPIs = async () => {
+    console.log('🚀 === INICIO generarKPIs ===')
+    console.log('🔑 Cliente ID (UUID):', clienteId)
+    console.log('📋 Columnas PostgreSQL disponibles:', formData.columnasPostgres)
+    console.log('📋 Total columnas:', formData.columnasPostgres?.length || 0)
+    
     setKpiLoading(true)
     setError('')
 
     try {
-      // Preparar solo los datos del Paso 4 (columnas PostgreSQL) para enviar al webhook
+      // Preparar datos incluyendo cliente_id y columnas PostgreSQL
       const payload = {
+        cliente_id: clienteId,  // ✅ CAMBIO: Ahora incluye el UUID del cliente
         columnas_postgres: formData.columnasPostgres || [],
         timestamp: new Date().toISOString()
       }
+
+      console.log('📤 KPIs - Payload enviado:', payload)
+      console.log('📤 KPIs - Payload JSON:', JSON.stringify(payload, null, 2))
+      console.log('🌐 KPIs - Endpoint:', 'https://n8n.agenciabuffalo.es/webhook/2f61521d-08e1-43af-945e-f84669a809ff')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('🔄 CAMBIO IMPLEMENTADO EN: generarKPIs()')
+      console.log('📍 Línea ~866: Payload structure')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('❌ ANTES: Solo enviaba columnas_postgres y timestamp')
+      console.log('   Payload: { columnas_postgres: [...], timestamp: "..." }')
+      console.log('')
+      console.log('✅ AHORA: Incluye cliente_id (UUID) del paso anterior')
+      console.log('   Payload: { cliente_id: "' + clienteId + '", columnas_postgres: [...], timestamp: "..." }')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
       const response = await fetch('https://n8n.agenciabuffalo.es/webhook/2f61521d-08e1-43af-945e-f84669a809ff', {
         method: 'POST',
@@ -759,39 +895,86 @@ export default function CrearClientePage() {
         body: JSON.stringify(payload)
       })
 
+      console.log('📡 KPIs - Response status:', response.status, response.statusText)
+
       if (!response.ok) {
         const errorText = await response.text()
+        console.error('❌ KPIs - Error response:', errorText)
         throw new Error(`Error del servidor: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('📥 KPIs - Data recibida (raw):', data)
+      console.log('📥 KPIs - Data JSON:', JSON.stringify(data, null, 2))
+      console.log('📥 KPIs - Data type:', Array.isArray(data) ? 'Array' : typeof data)
+      console.log('📥 KPIs - Array length:', Array.isArray(data) ? data.length : 'N/A')
       
       // Manejar la estructura del webhook: array con objeto que contiene success y kpis
       let kpiResponse = null
       
       if (Array.isArray(data) && data.length > 0) {
-        // Si es un array, tomar el primer elemento
+        console.log('✅ Detectado formato Array - tomando primer elemento')
         kpiResponse = data[0]
+        console.log('📦 data[0]:', kpiResponse)
       } else if (data.success && data.kpis) {
-        // Si es un objeto directo
+        console.log('✅ Detectado formato Objeto directo')
         kpiResponse = data
+      } else {
+        console.warn('⚠️ No se detectó ningún formato válido')
       }
       
+      console.log('🔍 KPIs - kpiResponse parseada:', kpiResponse)
+      console.log('🔍 KPIs - kpiResponse.success:', kpiResponse?.success)
+      console.log('🔍 KPIs - kpiResponse.kpis:', kpiResponse?.kpis)
+      console.log('🔍 KPIs - kpis es Array?:', Array.isArray(kpiResponse?.kpis))
+      
       if (kpiResponse && kpiResponse.success && kpiResponse.kpis && Array.isArray(kpiResponse.kpis)) {
+        console.log('✅ VALIDACIÓN EXITOSA - Procesando KPIs...')
+        console.log('📊 Número de KPIs recibidos:', kpiResponse.kpis.length)
+        
+        // Mostrar cada KPI
+        kpiResponse.kpis.forEach((kpi: any, index: number) => {
+          console.log(`  ➡️ KPI ${index + 1}:`, {
+            titulo: kpi.titulo,
+            tipo_grafico: kpi.tipo_grafico,
+            descripcion: kpi.descripcion,
+            inputs: kpi.inputs,
+            num_inputs: kpi.num_inputs
+          })
+        })
+        
+        console.log('✅ KPIs - Total KPIs generados:', kpiResponse.kpis.length)
+        
         setKpiData(kpiResponse.kpis)
         setKpiGenerated(true)
+        
+        console.log('💾 Estado actualizado - kpiData y kpiGenerated actualizados')
+        
         setSuccess(`¡KPIs generados exitosamente! Se han creado ${kpiResponse.kpis.length} KPIs para el cliente.`)
+        
+        console.log('🎉 === FIN generarKPIs (EXITOSO) ===')
         
         // Mostrar mensaje de éxito por 5 segundos
         setTimeout(() => {
           setSuccess('')
         }, 5000)
       } else {
+        console.error('❌ KPIs - Formato inválido. kpiResponse:', kpiResponse)
+        console.error('❌ KPIs - Validación fallida:')
+        console.error('   - kpiResponse existe?:', !!kpiResponse)
+        console.error('   - kpiResponse.success?:', kpiResponse?.success)
+        console.error('   - kpiResponse.kpis existe?:', !!kpiResponse?.kpis)
+        console.error('   - kpis es Array?:', Array.isArray(kpiResponse?.kpis))
         throw new Error('Formato de respuesta inválido del servicio de KPIs')
       }
     } catch (error: any) {
+      console.error('❌ KPIs - Error capturado:', error)
+      console.error('❌ KPIs - Error message:', error.message)
+      console.error('❌ KPIs - Error stack:', error.stack)
+      console.error('💥 === FIN generarKPIs (ERROR) ===')
       setError(`Error al generar KPIs: ${error.message || 'Error desconocido'}`)
     } finally {
+      console.log('🔄 KPI Loading set to false')
       setKpiLoading(false)
     }
   }
@@ -805,14 +988,20 @@ export default function CrearClientePage() {
 
   const prevStep = () => {
     if (currentStep > 1) {
+      console.log(`⬅️ === NAVEGACIÓN ATRÁS: Paso ${currentStep} → Paso ${currentStep - 1} ===`)
       setCurrentStep(currentStep - 1)
       setError('')
+      console.log(`✅ Regresando al paso ${currentStep - 1}`)
+    } else {
+      console.log('⚠️ Ya estás en el primer paso')
     }
   }
 
   const goToStep = (step: number) => {
+    console.log(`🎯 === NAVEGACIÓN DIRECTA: Paso ${currentStep} → Paso ${step} ===`)
     setCurrentStep(step)
     setError('')
+    console.log(`✅ Saltando directamente al paso ${step}`)
   }
 
   const validateStep = (step: number) => {
@@ -841,8 +1030,58 @@ export default function CrearClientePage() {
   }
 
   const handleNext = () => {
+    console.log(`🔄 === NAVEGACIÓN: Paso ${currentStep} → Paso ${currentStep + 1} ===`)
+    
+    // Mostrar datos del paso actual antes de avanzar
+    switch(currentStep) {
+      case 1:
+        console.log('📋 Paso 1 (Información Básica) completado:')
+        console.log('   - Cliente ID (UUID):', clienteId)
+        console.log('   - Nombre Empresa:', formData.nombreEmpresa)
+        console.log('   - Logo URL:', formData.logoUrl || '(no configurado)')
+        console.log('   - Usuario:', formData.usuario)
+        console.log('   - Password:', formData.password ? '****** (configurado)' : '(no configurado)')
+        console.log('   - Tipo Cliente:', formData.tipoCliente)
+        console.log('   ✅ Este UUID se usará en todo el proceso (AI, KPIs, creación final)')
+        break
+      
+      case 2:
+        console.log('📋 Paso 2 (Verticales) completado:')
+        console.log('   - Llamadas:', formData.verticales.llamadas ? '✅' : '❌')
+        console.log('   - Texto/Chat:', formData.verticales.texto ? '✅' : '❌')
+        console.log('   - Automatizaciones:', formData.verticales.automatizaciones ? '✅' : '❌')
+        const verticalesActivas = Object.keys(formData.verticales).filter(k => formData.verticales[k])
+        console.log('   - Total verticales activas:', verticalesActivas.length)
+        break
+      
+      case 3:
+        console.log('📋 Paso 3 (Webhooks) completado:')
+        const webhooksConfigurados = Object.keys(formData.webhooks).filter(k => formData.webhooks[k])
+        console.log('   - Webhooks configurados:', webhooksConfigurados.length)
+        if (webhooksConfigurados.length > 0) {
+          webhooksConfigurados.forEach(key => {
+            console.log(`     • ${key}:`, formData.webhooks[key])
+          })
+        } else {
+          console.log('   - No se configuraron webhooks')
+        }
+        break
+      
+      case 4:
+        console.log('📋 Paso 4 (Columnas PostgreSQL) completado:')
+        console.log('   - Total columnas:', formData.columnasPostgres?.length || 0)
+        if (formData.columnasPostgres && formData.columnasPostgres.length > 0) {
+          formData.columnasPostgres.forEach((col: any, index: number) => {
+            console.log(`     ${index + 1}. ${col.nombre} (${col.tipo}) - ID: ${col.id}`)
+          })
+        }
+        break
+    }
+    
     // Permitir navegación libre sin validaciones
     nextStep()
+    
+    console.log(`✅ Navegación completada. Ahora en paso ${currentStep + 1}`)
   }
 
 
@@ -889,27 +1128,47 @@ export default function CrearClientePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🚀 === INICIO handleSubmit (CREAR CLIENTE) ===')
+    console.log('📋 FormData completo:', formData)
+    
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
+      console.log('✅ Iniciando validaciones...')
+      
       // Validaciones
       if (!formData.nombreEmpresa || !formData.usuario || !formData.password) {
+        console.error('❌ Validación fallida: Campos obligatorios incompletos')
         setError('Por favor completa todos los campos obligatorios')
         return
       }
+      console.log('✅ Campos obligatorios: OK')
 
       // Validar que al menos una vertical esté seleccionada
       const verticalesSeleccionadas = Object.values(formData.verticales).some(v => v)
       if (!verticalesSeleccionadas) {
+        console.error('❌ Validación fallida: No hay verticales seleccionadas')
         setError('Debes seleccionar al menos una vertical (Llamadas, Texto/Chat o Automatizaciones)')
         return
       }
+      console.log('✅ Verticales seleccionadas:', formData.verticales)
 
-      // Crear cliente completo
+      // Crear cliente completo con UUID (ya generado al inicio)
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('🔄 CAMBIO IMPLEMENTADO EN: handleSubmit()')
+      console.log('📍 Línea ~1118: nuevoCliente.id')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('❌ ANTES: id = Date.now() (timestamp)')
+      console.log('   Ejemplo:', Date.now())
+      console.log('')
+      console.log('✅ AHORA: id = clienteId (UUID generado al inicio)')
+      console.log('   Valor:', clienteId)
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      
       const nuevoCliente = {
-        id: Date.now(),
+        id: clienteId,  // ✅ CAMBIO: Antes usaba Date.now(), ahora usa UUID
         nombreEmpresa: formData.nombreEmpresa,
         logoUrl: formData.logoUrl,
         usuario: formData.usuario,
@@ -917,24 +1176,69 @@ export default function CrearClientePage() {
         tipoCliente: formData.tipoCliente,
         verticales: formData.verticales,
         webhooks: formData.webhooks,
+        columnasPostgres: formData.columnasPostgres,
+        kpisGenerados: kpiData,
         estado: 'Activo',
         fechaCreacion: new Date().toISOString()
       }
 
+      console.log('📦 Objeto nuevoCliente creado:', nuevoCliente)
+      console.log('📦 nuevoCliente JSON:', JSON.stringify(nuevoCliente, null, 2))
+      console.log('📊 Resumen del cliente:')
+      console.log('   - ID (UUID):', nuevoCliente.id)
+      console.log('   - Empresa:', nuevoCliente.nombreEmpresa)
+      console.log('   - Usuario:', nuevoCliente.usuario)
+      console.log('   - Tipo:', nuevoCliente.tipoCliente)
+      console.log('   - Verticales activas:', Object.keys(nuevoCliente.verticales).filter(k => nuevoCliente.verticales[k]))
+      console.log('   - Columnas PostgreSQL:', nuevoCliente.columnasPostgres?.length || 0)
+      console.log('   - KPIs generados:', nuevoCliente.kpisGenerados?.length || 0)
+      console.log('   - Webhooks configurados:', Object.keys(nuevoCliente.webhooks).filter(k => nuevoCliente.webhooks[k]).length)
+
       // Aquí iría la llamada a la API para crear el cliente
-      console.log('Cliente creado:', nuevoCliente)
+      console.log('⚠️ NOTA: No hay endpoint configurado aún para crear cliente')
+      console.log('⚠️ Endpoint sugerido: POST /api/clientes/create')
+      console.log('📤 Payload que se enviaría:', nuevoCliente)
+      
+      // TODO: Descomentar cuando se implemente el endpoint
+      /*
+      const response = await fetch('/api/clientes/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nuevoCliente)
+      })
+
+      console.log('📡 Crear Cliente - Response status:', response.status, response.statusText)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Crear Cliente - Error response:', errorText)
+        throw new Error(`Error del servidor: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('📥 Crear Cliente - Data recibida:', data)
+      */
       
       setSuccess('Cliente creado exitosamente')
+      console.log('✅ Cliente creado exitosamente (simulado)')
+      console.log('🎉 === FIN handleSubmit (EXITOSO) ===')
       
       // Redirigir después de 2 segundos
       setTimeout(() => {
+        console.log('🔄 Redirigiendo a /admin/clientes...')
         router.push('/admin/clientes')
       }, 2000)
 
-    } catch (error) {
-      console.error('Error:', error)
+    } catch (error: any) {
+      console.error('❌ Crear Cliente - Error capturado:', error)
+      console.error('❌ Crear Cliente - Error message:', error.message)
+      console.error('❌ Crear Cliente - Error stack:', error.stack)
+      console.error('💥 === FIN handleSubmit (ERROR) ===')
       setError('Error al crear el cliente')
     } finally {
+      console.log('🔄 Loading set to false')
       setLoading(false)
     }
   }
