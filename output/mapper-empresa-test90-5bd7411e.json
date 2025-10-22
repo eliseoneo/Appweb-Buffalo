@@ -1,0 +1,356 @@
+{
+  "metadata": {
+    "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+    "nombre_empresa": "empresa-test90",
+    "timestamp": "2025-10-22T00:17:53.295Z",
+    "version": "1.0.0"
+  },
+  "database_schema": {
+    "tabla_principal": "empresa-test90",
+    "columnas": [
+      {
+        "id": "2df010fb-8ba0-40e7-be93-95ade0005eb8",
+        "nombre": "id_llamada",
+        "tipo": "UUID",
+        "descripcion": "Identificador único de cada llamada.",
+        "nullable": true,
+        "default": "8723c5da-d1fc-49c5-9a40-50e5a88f28d6"
+      },
+      {
+        "id": "e3973be3-f63d-48c5-af2a-10379b1483a9",
+        "nombre": "tiempo_llamada",
+        "tipo": "INTEGER",
+        "descripcion": "Duración total de la llamada en segundos.",
+        "nullable": true,
+        "default": 120
+      },
+      {
+        "id": "2adc9024-29f5-413d-9320-a0a310a193ce",
+        "nombre": "llamada_realizada",
+        "tipo": "BOOLEAN",
+        "descripcion": "Indica si la llamada fue completada (TRUE) o no (FALSE).",
+        "nullable": true,
+        "default": true
+      },
+      {
+        "id": "ac1be21d-f3f5-4bed-8cc1-7526e813034e",
+        "nombre": "nombre_ejecutor",
+        "tipo": "VARCHAR(255)",
+        "descripcion": "Nombre de la persona o agente que realizó la llamada.",
+        "nullable": true,
+        "default": "Juan Pérez"
+      },
+      {
+        "id": "0cce78fe-81c6-4cdf-be0c-dcd2e96e7f00",
+        "nombre": "datos_ejecutor",
+        "tipo": "JSONB",
+        "descripcion": "Información adicional sobre la persona que ejecutó la llamada, como ID de empleado, departamento, etc.",
+        "nullable": true,
+        "default": {
+          "ejemplo": "dato",
+          "valor": 123
+        }
+      },
+      {
+        "id": "9090e6ec-3c70-47e4-9802-32be024c7c80",
+        "nombre": "fecha_hora",
+        "tipo": "TIMESTAMP",
+        "descripcion": "Fecha y hora exacta en que se inició la llamada.",
+        "nullable": true,
+        "default": "2025-10-22T00:17:54.297Z"
+      },
+      {
+        "id": "cf469a7e-7532-4470-92a1-0d6f446dae8d",
+        "nombre": "tiempo_espera",
+        "tipo": "INTEGER",
+        "descripcion": "Tiempo que el usuario esperó en cola antes de ser atendido, en segundos.",
+        "nullable": true,
+        "default": 120
+      },
+      {
+        "id": "22a91be8-219d-43d1-be12-1be4ed93116c",
+        "nombre": "motivo_desconexion",
+        "tipo": "VARCHAR(255)",
+        "descripcion": "Razón por la cual la llamada fue desconectada. Ejemplos: 'usuario cuelga', 'agente cuelga', 'no hay respuesta', 'ocupado', 'tiempo máximo', 'problema técnico'.",
+        "nullable": true,
+        "default": "usuario cuelga"
+      },
+      {
+        "id": "ac6410c7-af0e-48a1-ab60-47dd4f74d1e7",
+        "nombre": "sentimiento_usuario",
+        "tipo": "VARCHAR(255)",
+        "descripcion": "Sentimiento general del usuario durante la llamada. Puede ser 'Positive', 'Negative', 'Neutral' o 'Unknown'.",
+        "nullable": true,
+        "default": "Positive"
+      },
+      {
+        "id": "a58dfff5-16c7-4d96-b6fc-a1d46dc193ca",
+        "nombre": "costo_llamada",
+        "tipo": "DECIMAL(10,2)",
+        "descripcion": "Costo monetario asociado a la llamada.",
+        "nullable": true,
+        "default": 0.45
+      },
+      {
+        "id": "35e185e1-2857-40a5-9c93-19c7dfa3ab84",
+        "nombre": "conversacion_sostenida",
+        "tipo": "TEXT",
+        "descripcion": "Transcripción o resumen de la conversación sostenida durante la llamada.",
+        "nullable": true,
+        "default": "Cliente pregunta por servicios disponibles. Agente explica opciones y precios."
+      }
+    ],
+    "total_columnas": 11
+  },
+  "kpis_mapping": {
+    "kpis": [
+      {
+        "kpi_id": "707bef1b-6a34-4bbe-a920-53ddb945ee59",
+        "titulo": "Número total de llamadas",
+        "tipo_grafico": "individual",
+        "columnas_origen": [
+          "id_llamada"
+        ],
+        "orden": 1,
+        "activo": true
+      },
+      {
+        "kpi_id": "7477b8d2-59e3-475c-8490-e7426834ec8e",
+        "titulo": "Duración media de las llamadas",
+        "tipo_grafico": "individual",
+        "columnas_origen": [
+          "tiempo_llamada"
+        ],
+        "orden": 2,
+        "activo": true
+      },
+      {
+        "kpi_id": "674f1e77-de2a-4bee-b127-f99960a0b0c5",
+        "titulo": "Porcentaje de llamadas completadas",
+        "tipo_grafico": "indicador",
+        "columnas_origen": [
+          "llamada_realizada"
+        ],
+        "orden": 3,
+        "activo": true
+      },
+      {
+        "kpi_id": "c8525dba-44a3-4d85-8910-4ab2e06e1f13",
+        "titulo": "Evolución de llamadas por fecha y hora",
+        "tipo_grafico": "linea",
+        "columnas_origen": [
+          "fecha_hora"
+        ],
+        "orden": 4,
+        "activo": true
+      },
+      {
+        "kpi_id": "7cbd1916-d7c5-41fc-8a23-027031681228",
+        "titulo": "Tiempo medio de espera",
+        "tipo_grafico": "individual",
+        "columnas_origen": [
+          "tiempo_espera"
+        ],
+        "orden": 5,
+        "activo": true
+      },
+      {
+        "kpi_id": "f8e84954-ba5b-437f-8aa6-d57e90f9b69c",
+        "titulo": "Motivos de desconexión de llamadas",
+        "tipo_grafico": "barras_vertical",
+        "columnas_origen": [
+          "motivo_desconexion"
+        ],
+        "orden": 6,
+        "activo": true
+      },
+      {
+        "kpi_id": "36d749a3-60c4-4ccb-8d50-3869c91d6434",
+        "titulo": "Sentimiento del usuario en las llamadas",
+        "tipo_grafico": "poligono",
+        "columnas_origen": [
+          "sentimiento_usuario"
+        ],
+        "orden": 7,
+        "activo": true
+      },
+      {
+        "kpi_id": "dbc4b1b6-801a-479f-9619-6726aaad998a",
+        "titulo": "Costo total de las llamadas",
+        "tipo_grafico": "individual",
+        "columnas_origen": [
+          "costo_llamada"
+        ],
+        "orden": 8,
+        "activo": true
+      },
+      {
+        "kpi_id": "e89aa5ba-1218-4655-9ce5-1e1e204398c4",
+        "titulo": "Costo medio por llamada",
+        "tipo_grafico": "individual",
+        "columnas_origen": [
+          "costo_llamada"
+        ],
+        "orden": 9,
+        "activo": true
+      },
+      {
+        "kpi_id": "114cd008-784b-494a-b956-d2d772006559",
+        "titulo": "Llamadas por ejecutor",
+        "tipo_grafico": "barras_horizontal",
+        "columnas_origen": [
+          "nombre_ejecutor"
+        ],
+        "orden": 10,
+        "activo": true
+      }
+    ],
+    "total_kpis": 10
+  },
+  "field_mapping": {
+    "columna_kpi_relations": [
+      {
+        "columna_id": "2df010fb-8ba0-40e7-be93-95ade0005eb8",
+        "columna_nombre": "id_llamada",
+        "tipo_dato": "UUID",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "707bef1b-6a34-4bbe-a920-53ddb945ee59",
+            "kpi_titulo": "Número total de llamadas",
+            "tipo_grafico": "individual"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "e3973be3-f63d-48c5-af2a-10379b1483a9",
+        "columna_nombre": "tiempo_llamada",
+        "tipo_dato": "INTEGER",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "7477b8d2-59e3-475c-8490-e7426834ec8e",
+            "kpi_titulo": "Duración media de las llamadas",
+            "tipo_grafico": "individual"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "2adc9024-29f5-413d-9320-a0a310a193ce",
+        "columna_nombre": "llamada_realizada",
+        "tipo_dato": "BOOLEAN",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "674f1e77-de2a-4bee-b127-f99960a0b0c5",
+            "kpi_titulo": "Porcentaje de llamadas completadas",
+            "tipo_grafico": "indicador"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "ac1be21d-f3f5-4bed-8cc1-7526e813034e",
+        "columna_nombre": "nombre_ejecutor",
+        "tipo_dato": "VARCHAR(255)",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "114cd008-784b-494a-b956-d2d772006559",
+            "kpi_titulo": "Llamadas por ejecutor",
+            "tipo_grafico": "barras_horizontal"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "0cce78fe-81c6-4cdf-be0c-dcd2e96e7f00",
+        "columna_nombre": "datos_ejecutor",
+        "tipo_dato": "JSONB",
+        "usado_en_kpis": [],
+        "total_kpis_relacionados": 0
+      },
+      {
+        "columna_id": "9090e6ec-3c70-47e4-9802-32be024c7c80",
+        "columna_nombre": "fecha_hora",
+        "tipo_dato": "TIMESTAMP",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "c8525dba-44a3-4d85-8910-4ab2e06e1f13",
+            "kpi_titulo": "Evolución de llamadas por fecha y hora",
+            "tipo_grafico": "linea"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "cf469a7e-7532-4470-92a1-0d6f446dae8d",
+        "columna_nombre": "tiempo_espera",
+        "tipo_dato": "INTEGER",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "7cbd1916-d7c5-41fc-8a23-027031681228",
+            "kpi_titulo": "Tiempo medio de espera",
+            "tipo_grafico": "individual"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "22a91be8-219d-43d1-be12-1be4ed93116c",
+        "columna_nombre": "motivo_desconexion",
+        "tipo_dato": "VARCHAR(255)",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "f8e84954-ba5b-437f-8aa6-d57e90f9b69c",
+            "kpi_titulo": "Motivos de desconexión de llamadas",
+            "tipo_grafico": "barras_vertical"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "ac6410c7-af0e-48a1-ab60-47dd4f74d1e7",
+        "columna_nombre": "sentimiento_usuario",
+        "tipo_dato": "VARCHAR(255)",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "36d749a3-60c4-4ccb-8d50-3869c91d6434",
+            "kpi_titulo": "Sentimiento del usuario en las llamadas",
+            "tipo_grafico": "poligono"
+          }
+        ],
+        "total_kpis_relacionados": 1
+      },
+      {
+        "columna_id": "a58dfff5-16c7-4d96-b6fc-a1d46dc193ca",
+        "columna_nombre": "costo_llamada",
+        "tipo_dato": "DECIMAL(10,2)",
+        "usado_en_kpis": [
+          {
+            "kpi_id": "dbc4b1b6-801a-479f-9619-6726aaad998a",
+            "kpi_titulo": "Costo total de las llamadas",
+            "tipo_grafico": "individual"
+          },
+          {
+            "kpi_id": "e89aa5ba-1218-4655-9ce5-1e1e204398c4",
+            "kpi_titulo": "Costo medio por llamada",
+            "tipo_grafico": "individual"
+          }
+        ],
+        "total_kpis_relacionados": 2
+      },
+      {
+        "columna_id": "35e185e1-2857-40a5-9c93-19c7dfa3ab84",
+        "columna_nombre": "conversacion_sostenida",
+        "tipo_dato": "TEXT",
+        "usado_en_kpis": [],
+        "total_kpis_relacionados": 0
+      }
+    ]
+  },
+  "statistics": {
+    "total_columnas": 11,
+    "total_kpis": 10,
+    "columnas_usadas_en_kpis": 9,
+    "columnas_sin_uso": 2
+  }
+}

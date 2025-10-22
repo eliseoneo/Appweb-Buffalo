@@ -1,0 +1,240 @@
+{
+  "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+  "nombre_empresa": "empresa-test90",
+  "timestamp": "2025-10-22T00:17:53.295Z",
+  "total_kpis": 10,
+  "kpis_display": [
+    {
+      "titulo": "Número total de llamadas",
+      "descripcion": "Muestra el número total de llamadas registradas en el sistema. Es una métrica fundamental para entender el volumen de actividad.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": [
+        "id_llamada"
+      ],
+      "ejemplo": "Un número grande que representa el total de llamadas."
+    },
+    {
+      "titulo": "Duración media de las llamadas",
+      "descripcion": "Calcula el promedio de la duración de todas las llamadas en segundos. Permite evaluar la eficiencia y la complejidad de las interacciones.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": [
+        "tiempo_llamada"
+      ],
+      "ejemplo": "Un número que representa la duración media en segundos (ej. 180s)."
+    },
+    {
+      "titulo": "Porcentaje de llamadas completadas",
+      "descripcion": "Indica la proporción de llamadas que fueron completadas con éxito frente al total. Es crucial para medir la efectividad del servicio.",
+      "tipo_grafico": "indicador",
+      "num_inputs": 2,
+      "inputs": [
+        "llamada_realizada"
+      ],
+      "ejemplo": "Un indicador que muestra un porcentaje (ej. 85% completadas)."
+    },
+    {
+      "titulo": "Evolución de llamadas por fecha y hora",
+      "descripcion": "Muestra cómo el volumen de llamadas varía a lo largo del tiempo, agrupado por fecha y hora. Útil para identificar patrones de demanda y picos de actividad.",
+      "tipo_grafico": "linea",
+      "num_inputs": 1,
+      "inputs": [
+        "fecha_hora"
+      ],
+      "ejemplo": "Una línea que sube y baja mostrando el número de llamadas por día u hora."
+    },
+    {
+      "titulo": "Tiempo medio de espera",
+      "descripcion": "Calcula el promedio del tiempo que los usuarios esperan en cola antes de ser atendidos. Una métrica clave para la satisfacción del cliente.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": [
+        "tiempo_espera"
+      ],
+      "ejemplo": "Un número que representa el tiempo medio de espera en segundos (ej. 30s)."
+    },
+    {
+      "titulo": "Motivos de desconexión de llamadas",
+      "descripcion": "Distribución de las diferentes razones por las que las llamadas se desconectan. Ayuda a identificar problemas recurrentes o áreas de mejora en el proceso.",
+      "tipo_grafico": "barras_vertical",
+      "num_inputs": 6,
+      "inputs": [
+        "motivo_desconexion"
+      ],
+      "ejemplo": "Barras que comparan la frecuencia de 'usuario cuelga', 'agente cuelga', 'no hay respuesta', etc."
+    },
+    {
+      "titulo": "Sentimiento del usuario en las llamadas",
+      "descripcion": "Representa la distribución de los sentimientos expresados por los usuarios durante las llamadas. Permite una visión rápida de la satisfacción general.",
+      "tipo_grafico": "poligono",
+      "num_inputs": 4,
+      "inputs": [
+        "sentimiento_usuario"
+      ],
+      "ejemplo": "Un polígono con 4 lados (Positive, Negative, Neutral, Unknown) mostrando la proporción de cada uno."
+    },
+    {
+      "titulo": "Costo total de las llamadas",
+      "descripcion": "Suma el costo monetario de todas las llamadas registradas. Es una métrica financiera importante para el control de gastos.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": [
+        "costo_llamada"
+      ],
+      "ejemplo": "Un número que representa el costo total en la moneda correspondiente (ej. 1250.75 €)."
+    },
+    {
+      "titulo": "Costo medio por llamada",
+      "descripcion": "Calcula el costo promedio de cada llamada. Útil para entender la eficiencia económica de las operaciones.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": [
+        "costo_llamada"
+      ],
+      "ejemplo": "Un número que representa el costo medio por llamada (ej. 0.50 €)."
+    },
+    {
+      "titulo": "Llamadas por ejecutor",
+      "descripcion": "Muestra el número de llamadas realizadas por cada agente o ejecutor. Permite evaluar el rendimiento individual y la carga de trabajo.",
+      "tipo_grafico": "barras_horizontal",
+      "num_inputs": 1,
+      "inputs": [
+        "nombre_ejecutor"
+      ],
+      "ejemplo": "Barras horizontales donde cada barra es un ejecutor y su longitud indica el número de llamadas."
+    }
+  ],
+  "kpis_tabla": [
+    {
+      "id": "707bef1b-6a34-4bbe-a920-53ddb945ee59",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Número total de llamadas",
+      "descripcion": "Muestra el número total de llamadas registradas en el sistema. Es una métrica fundamental para entender el volumen de actividad.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": "[\"id_llamada\"]",
+      "ejemplo": "Un número grande que representa el total de llamadas.",
+      "orden": 1,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "7477b8d2-59e3-475c-8490-e7426834ec8e",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Duración media de las llamadas",
+      "descripcion": "Calcula el promedio de la duración de todas las llamadas en segundos. Permite evaluar la eficiencia y la complejidad de las interacciones.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": "[\"tiempo_llamada\"]",
+      "ejemplo": "Un número que representa la duración media en segundos (ej. 180s).",
+      "orden": 2,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "674f1e77-de2a-4bee-b127-f99960a0b0c5",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Porcentaje de llamadas completadas",
+      "descripcion": "Indica la proporción de llamadas que fueron completadas con éxito frente al total. Es crucial para medir la efectividad del servicio.",
+      "tipo_grafico": "indicador",
+      "num_inputs": 2,
+      "inputs": "[\"llamada_realizada\"]",
+      "ejemplo": "Un indicador que muestra un porcentaje (ej. 85% completadas).",
+      "orden": 3,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "c8525dba-44a3-4d85-8910-4ab2e06e1f13",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Evolución de llamadas por fecha y hora",
+      "descripcion": "Muestra cómo el volumen de llamadas varía a lo largo del tiempo, agrupado por fecha y hora. Útil para identificar patrones de demanda y picos de actividad.",
+      "tipo_grafico": "linea",
+      "num_inputs": 1,
+      "inputs": "[\"fecha_hora\"]",
+      "ejemplo": "Una línea que sube y baja mostrando el número de llamadas por día u hora.",
+      "orden": 4,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "7cbd1916-d7c5-41fc-8a23-027031681228",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Tiempo medio de espera",
+      "descripcion": "Calcula el promedio del tiempo que los usuarios esperan en cola antes de ser atendidos. Una métrica clave para la satisfacción del cliente.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": "[\"tiempo_espera\"]",
+      "ejemplo": "Un número que representa el tiempo medio de espera en segundos (ej. 30s).",
+      "orden": 5,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "f8e84954-ba5b-437f-8aa6-d57e90f9b69c",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Motivos de desconexión de llamadas",
+      "descripcion": "Distribución de las diferentes razones por las que las llamadas se desconectan. Ayuda a identificar problemas recurrentes o áreas de mejora en el proceso.",
+      "tipo_grafico": "barras_vertical",
+      "num_inputs": 6,
+      "inputs": "[\"motivo_desconexion\"]",
+      "ejemplo": "Barras que comparan la frecuencia de 'usuario cuelga', 'agente cuelga', 'no hay respuesta', etc.",
+      "orden": 6,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "36d749a3-60c4-4ccb-8d50-3869c91d6434",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Sentimiento del usuario en las llamadas",
+      "descripcion": "Representa la distribución de los sentimientos expresados por los usuarios durante las llamadas. Permite una visión rápida de la satisfacción general.",
+      "tipo_grafico": "poligono",
+      "num_inputs": 4,
+      "inputs": "[\"sentimiento_usuario\"]",
+      "ejemplo": "Un polígono con 4 lados (Positive, Negative, Neutral, Unknown) mostrando la proporción de cada uno.",
+      "orden": 7,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "dbc4b1b6-801a-479f-9619-6726aaad998a",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Costo total de las llamadas",
+      "descripcion": "Suma el costo monetario de todas las llamadas registradas. Es una métrica financiera importante para el control de gastos.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": "[\"costo_llamada\"]",
+      "ejemplo": "Un número que representa el costo total en la moneda correspondiente (ej. 1250.75 €).",
+      "orden": 8,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "e89aa5ba-1218-4655-9ce5-1e1e204398c4",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Costo medio por llamada",
+      "descripcion": "Calcula el costo promedio de cada llamada. Útil para entender la eficiencia económica de las operaciones.",
+      "tipo_grafico": "individual",
+      "num_inputs": 1,
+      "inputs": "[\"costo_llamada\"]",
+      "ejemplo": "Un número que representa el costo medio por llamada (ej. 0.50 €).",
+      "orden": 9,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    },
+    {
+      "id": "114cd008-784b-494a-b956-d2d772006559",
+      "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+      "titulo": "Llamadas por ejecutor",
+      "descripcion": "Muestra el número de llamadas realizadas por cada agente o ejecutor. Permite evaluar el rendimiento individual y la carga de trabajo.",
+      "tipo_grafico": "barras_horizontal",
+      "num_inputs": 1,
+      "inputs": "[\"nombre_ejecutor\"]",
+      "ejemplo": "Barras horizontales donde cada barra es un ejecutor y su longitud indica el número de llamadas.",
+      "orden": 10,
+      "activo": true,
+      "fecha_creacion": "2025-10-22T00:17:53.295Z"
+    }
+  ]
+}

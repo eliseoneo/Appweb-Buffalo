@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+    "nombre_empresa": "empresa-test90",
+    "tabla_nombre": "empresa-test90",
+    "timestamp": "2025-10-22T00:17:54.811Z",
+    "total_columnas": 11
+  },
+  "create_table": {
+    "descripcion": "Script SQL para crear la tabla principal",
+    "script": "-- ============================================\n-- Tabla: empresa-test90\n-- Cliente: empresa-test90\n-- Cliente ID: 5bd7411e-6fc1-4dc9-a898-77b4cadab6c9\n-- Fecha: 2025-10-22T00:17:54.810Z\n-- ============================================\n\nCREATE TABLE IF NOT EXISTS empresa-test90 (\n  id_llamada UUID, -- Identificador único de cada llamada.\n  tiempo_llamada INTEGER, -- Duración total de la llamada en segundos.\n  llamada_realizada BOOLEAN, -- Indica si la llamada fue completada (TRUE) o no (FALSE).\n  nombre_ejecutor VARCHAR(255), -- Nombre de la persona o agente que realizó la llamada.\n  datos_ejecutor JSONB, -- Información adicional sobre la persona que ejecutó la llamada, como ID de empleado, departamento, etc.\n  fecha_hora TIMESTAMP, -- Fecha y hora exacta en que se inició la llamada.\n  tiempo_espera INTEGER, -- Tiempo que el usuario esperó en cola antes de ser atendido, en segundos.\n  motivo_desconexion VARCHAR(255), -- Razón por la cual la llamada fue desconectada. Ejemplos: 'usuario cuelga', 'agente cuelga', 'no hay respuesta', 'ocupado', 'tiempo máximo', 'problema técnico'.\n  sentimiento_usuario VARCHAR(255), -- Sentimiento general del usuario durante la llamada. Puede ser 'Positive', 'Negative', 'Neutral' o 'Unknown'.\n  costo_llamada DECIMAL(10,2), -- Costo monetario asociado a la llamada.\n  conversacion_sostenida TEXT -- Transcripción o resumen de la conversación sostenida durante la llamada.\n);\n\n-- Índices\nCREATE INDEX IF NOT EXISTS idx_empresa-test90_created ON empresa-test90(fecha_hora);\nCREATE INDEX IF NOT EXISTS idx_empresa-test90_nombre_ejecutor ON empresa-test90(nombre_ejecutor);\n\n-- Comentarios de tabla\nCOMMENT ON TABLE empresa-test90 IS 'Tabla generada automáticamente para cliente: empresa-test90 (5bd7411e-6fc1-4dc9-a898-77b4cadab6c9)';\n"
+  },
+  "stored_procedure": {
+    "descripcion": "Stored procedure para insertar registros",
+    "procedure_name": "sp_insertar_empresa-test90",
+    "script": "-- ============================================\n-- Stored Procedure: sp_insertar_empresa-test90\n-- Propósito: Insertar registros en empresa-test90\n-- ============================================\n\nCREATE OR REPLACE FUNCTION sp_insertar_empresa-test90(\n  p_id_llamada UUID,\n  p_tiempo_llamada INTEGER,\n  p_llamada_realizada BOOLEAN,\n  p_nombre_ejecutor VARCHAR(255),\n  p_datos_ejecutor JSONB,\n  p_fecha_hora TIMESTAMP,\n  p_tiempo_espera INTEGER,\n  p_motivo_desconexion VARCHAR(255),\n  p_sentimiento_usuario VARCHAR(255),\n  p_costo_llamada DECIMAL(10,2),\n  p_conversacion_sostenida TEXT\n) RETURNS UUID AS $$\nDECLARE\n  v_id UUID;\nBEGIN\n  -- Generar UUID si no existe columna id\n  v_id := gen_random_uuid();\n\n  -- Insertar registro\n  INSERT INTO empresa-test90 (\n    id_llamada,\n    tiempo_llamada,\n    llamada_realizada,\n    nombre_ejecutor,\n    datos_ejecutor,\n    fecha_hora,\n    tiempo_espera,\n    motivo_desconexion,\n    sentimiento_usuario,\n    costo_llamada,\n    conversacion_sostenida\n  ) VALUES (\n    p_id_llamada,\n    p_tiempo_llamada,\n    p_llamada_realizada,\n    p_nombre_ejecutor,\n    p_datos_ejecutor,\n    p_fecha_hora,\n    p_tiempo_espera,\n    p_motivo_desconexion,\n    p_sentimiento_usuario,\n    p_costo_llamada,\n    p_conversacion_sostenida\n  );\n\n  RETURN v_id;\nEND;\n$$ LANGUAGE plpgsql;\n\n-- ============================================\n-- Ejemplo de uso:\n-- ============================================\n-- SELECT sp_insertar_empresa-test90(\n--   'a09ed47a-f13f-495e-a290-fca101ef2c16',  -- id_llamada\n--   120,  -- tiempo_llamada\n--   true,  -- llamada_realizada\n--   'Juan Pérez',  -- nombre_ejecutor\n--   '{\"ejemplo\":\"dato\",\"valor\":123}'::jsonb,  -- datos_ejecutor\n--   '2025-10-22T00:17:54.810Z',  -- fecha_hora\n--   120,  -- tiempo_espera\n--   'usuario cuelga',  -- motivo_desconexion\n--   'Positive',  -- sentimiento_usuario\n--   0.45,  -- costo_llamada\n--   'Cliente pregunta por servicios disponibles. Agente explica opciones y precios.'  -- conversacion_sostenida\n-- );\n"
+  },
+  "columnas_detalle": [
+    {
+      "nombre": "id_llamada",
+      "tipo": "UUID",
+      "descripcion": "Identificador único de cada llamada.",
+      "ejemplo_valor": "c62c6061-d617-4598-8e0a-61e963996983"
+    },
+    {
+      "nombre": "tiempo_llamada",
+      "tipo": "INTEGER",
+      "descripcion": "Duración total de la llamada en segundos.",
+      "ejemplo_valor": 120
+    },
+    {
+      "nombre": "llamada_realizada",
+      "tipo": "BOOLEAN",
+      "descripcion": "Indica si la llamada fue completada (TRUE) o no (FALSE).",
+      "ejemplo_valor": true
+    },
+    {
+      "nombre": "nombre_ejecutor",
+      "tipo": "VARCHAR(255)",
+      "descripcion": "Nombre de la persona o agente que realizó la llamada.",
+      "ejemplo_valor": "Juan Pérez"
+    },
+    {
+      "nombre": "datos_ejecutor",
+      "tipo": "JSONB",
+      "descripcion": "Información adicional sobre la persona que ejecutó la llamada, como ID de empleado, departamento, etc.",
+      "ejemplo_valor": {
+        "ejemplo": "dato",
+        "valor": 123
+      }
+    },
+    {
+      "nombre": "fecha_hora",
+      "tipo": "TIMESTAMP",
+      "descripcion": "Fecha y hora exacta en que se inició la llamada.",
+      "ejemplo_valor": "2025-10-22T00:17:54.811Z"
+    },
+    {
+      "nombre": "tiempo_espera",
+      "tipo": "INTEGER",
+      "descripcion": "Tiempo que el usuario esperó en cola antes de ser atendido, en segundos.",
+      "ejemplo_valor": 120
+    },
+    {
+      "nombre": "motivo_desconexion",
+      "tipo": "VARCHAR(255)",
+      "descripcion": "Razón por la cual la llamada fue desconectada. Ejemplos: 'usuario cuelga', 'agente cuelga', 'no hay respuesta', 'ocupado', 'tiempo máximo', 'problema técnico'.",
+      "ejemplo_valor": "usuario cuelga"
+    },
+    {
+      "nombre": "sentimiento_usuario",
+      "tipo": "VARCHAR(255)",
+      "descripcion": "Sentimiento general del usuario durante la llamada. Puede ser 'Positive', 'Negative', 'Neutral' o 'Unknown'.",
+      "ejemplo_valor": "Positive"
+    },
+    {
+      "nombre": "costo_llamada",
+      "tipo": "DECIMAL(10,2)",
+      "descripcion": "Costo monetario asociado a la llamada.",
+      "ejemplo_valor": 0.45
+    },
+    {
+      "nombre": "conversacion_sostenida",
+      "tipo": "TEXT",
+      "descripcion": "Transcripción o resumen de la conversación sostenida durante la llamada.",
+      "ejemplo_valor": "Cliente pregunta por servicios disponibles. Agente explica opciones y precios."
+    }
+  ]
+}

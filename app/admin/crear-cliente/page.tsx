@@ -17,14 +17,15 @@ import {
   Bot,
   BarChart3,
   Database,
-  Trash2
+  Trash2,
+  Activity
 } from 'lucide-react'
 
 // Componente del indicador de pasos
 const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToStep: (step: number) => void }) => (
   <div className="mb-8">
     <div className="flex items-center justify-between">
-      {[1, 2, 3, 4, 5].map((step) => (
+      {[1, 2, 3, 4, 5, 6].map((step) => (
         <div key={step} className="flex items-center">
           <button
             onClick={() => goToStep(step)}
@@ -42,7 +43,7 @@ const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToSte
               step
             )}
           </button>
-          {step < 5 && (
+            {step < 6 && (
             <div className={`w-8 h-1 mx-2 rounded ${
               step < currentStep ? 'bg-green-500' : 'bg-gray-300'
             }`} />
@@ -56,6 +57,7 @@ const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToSte
       <span>Webhooks</span>
       <span>Columnas PostgreSQL</span>
       <span>Generar KPIs</span>
+      <span>Preview Dashboard</span>
     </div>
   </div>
 )
@@ -432,6 +434,14 @@ const Step4 = ({ formData, addColumna, updateColumna, removeColumna, limpiarColu
             Agregar Columna
           </button>
         </div>
+        
+        {columnas.length > 0 && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700">
+              ℹ️ Las columnas se guardan automáticamente cuando se generan con IA. Los JSON se pueden enviar via "Webhook Json".
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -465,20 +475,25 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData }: {
                   <span className="text-green-600 font-semibold text-lg">¡KPIs Generados!</span>
                 </div>
                 <p className="text-green-600 text-sm">
-                  Se han generado {kpiData?.length || 0} KPIs basados en las columnas de PostgreSQL
+                  Se han generado {kpiData?.total_kpis || kpiData?.kpis?.length || 0} KPIs basados en las columnas de PostgreSQL
                 </p>
+                {kpiData?.cliente_id && (
+                  <p className="text-green-600 text-xs mt-2">
+                    Cliente ID: {kpiData.cliente_id}
+                  </p>
+                )}
               </div>
 
               {/* Lista de KPIs generados */}
-              {kpiData && kpiData.length > 0 && (
+              {kpiData && kpiData.kpis && kpiData.kpis.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-xl p-6 text-left">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <BarChart3 className="h-5 w-5 text-buffalo-green mr-2" />
-                    KPIs Generados ({kpiData.length})
+                    KPIs Generados ({kpiData.kpis.length})
                   </h4>
                   
                   <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {kpiData.map((kpi: any, index: number) => (
+                    {kpiData.kpis.map((kpi: any, index: number) => (
                       <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <div className="flex items-start justify-between mb-2">
                           <h5 className="font-semibold text-gray-900 text-sm">{kpi.titulo}</h5>
@@ -504,6 +519,19 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData }: {
                   </div>
                 </div>
               )}
+              
+              {/* Información de guardado automático */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <p className="text-sm text-blue-700 text-center font-medium mb-2">
+                  ℹ️ Archivos guardados automáticamente:
+                </p>
+                <ul className="text-xs text-blue-600 space-y-1">
+                  <li>✓ KPIs JSON (datos completos)</li>
+                  <li>✓ Mapper Normalizado (relaciones columnas-KPIs con datos sintéticos)</li>
+                  <li>✓ SQL Scripts (CREATE TABLE + Stored Procedure)</li>
+                  <li>✓ Los JSON se pueden enviar via "Webhook Json"</li>
+                </ul>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
@@ -539,13 +567,239 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData }: {
   )
 }
 
+// Componente del Paso 6: Preview Dashboard
+const Step6 = ({ formData, kpiData, clienteId }: { 
+  formData: any,
+  kpiData: any,
+  clienteId: string
+}) => {
+  if (!kpiData || !kpiData.kpis) {
+    console.warn('⚠️ Preview Dashboard: No hay KPIs para mostrar')
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center">
+        <BarChart3 className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">KPIs no generados</h3>
+        <p className="text-gray-600">Genera los KPIs en el paso anterior para ver el preview del dashboard</p>
+      </div>
+    )
+  }
+
+  const kpisIndividuales = kpiData.kpis.filter((kpi: any) => kpi.tipo_grafico === 'individual')
+  const kpisLinea = kpiData.kpis.filter((kpi: any) => kpi.tipo_grafico === 'linea')
+  const kpisBarras = kpiData.kpis.filter((kpi: any) => kpi.tipo_grafico.includes('barras'))
+  const kpisDonut = kpiData.kpis.filter((kpi: any) => kpi.tipo_grafico === 'donut' || kpi.tipo_grafico === 'pie')
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('📊 PREVIEW DASHBOARD - Paso 6')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('🏢 Empresa:', formData.nombreEmpresa)
+  console.log('🔑 Cliente ID:', clienteId)
+  console.log('📊 KPIs por tipo:')
+  console.log('   - Individuales:', kpisIndividuales.length, '(máx 3 mostrados)')
+  console.log('   - Línea:', kpisLinea.length, '(máx 2 mostrados)')
+  console.log('   - Barras:', kpisBarras.length, '(máx 2 mostrados)')
+  console.log('   - Donut/Pie:', kpisDonut.length, '(máx 2 mostrados)')
+  console.log('🎨 Diseño: n8n-dashboard style')
+  console.log('📱 Responsive: ✅')
+  console.log('   - Mobile: 1 columna')
+  console.log('   - Tablet: 2 columnas')
+  console.log('   - Desktop: 3-4 columnas')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+  const colors = ['blue', 'green', 'purple', 'orange', 'red']
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 -mx-4 sm:-mx-6 lg:-mx-8 -my-8 p-4 sm:p-6 lg:p-8">
+      {/* Header - Estilo n8n-dashboard - RESPONSIVE */}
+      <div className="bg-white border-b border-gray-200 shadow-sm rounded-xl mb-6 lg:mb-8">
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
+          {/* Title Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">
+                {formData.nombreEmpresa} - Dashboard Preview
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">Vista previa del dashboard con KPIs generados</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="px-3 sm:px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs sm:text-sm font-medium text-green-700">Preview</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Info Row - RESPONSIVE */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+              <span className="text-gray-600">Cliente ID:</span>
+              <span className="font-mono text-gray-900 truncate">{clienteId.substring(0, 8)}...</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+              <span className="text-gray-600">KPIs:</span>
+              <span className="font-semibold text-gray-900">{kpiData.total_kpis || kpiData.kpis?.length || 0}</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+              <span className="text-gray-600">Columnas:</span>
+              <span className="font-semibold text-gray-900">{formData.columnasPostgres?.length || 0}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards Row - RESPONSIVE: 1 col mobile, 2 col tablet, 3 col desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {kpisIndividuales.slice(0, 3).map((kpi: any, index: number) => (
+          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">{kpi.titulo}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                  {index === 0 ? '1,234' : index === 1 ? '145 seg' : '89%'}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">{kpi.descripcion?.substring(0, 50)}...</p>
+                <div className="flex items-center gap-1 mt-2 text-xs sm:text-sm font-medium text-green-600">
+                  <span>↑</span>
+                  <span>+{12 + index * 3}% vs anterior</span>
+                </div>
+              </div>
+              <div className={`p-2 sm:p-3 rounded-lg flex-shrink-0 ${
+                index === 0 ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                index === 1 ? 'bg-green-50 text-green-600 border-green-100' :
+                'bg-purple-50 text-purple-600 border-purple-100'
+              }`}>
+                <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Row 1: Evolution Chart - Full Width - RESPONSIVE */}
+      {kpisLinea.length > 0 && (
+        <div className="mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpisLinea[0].titulo}</h3>
+                <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpisLinea[0].descripcion?.substring(0, 80)}...</p>
+              </div>
+              <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium self-start sm:self-center">Línea</span>
+            </div>
+            <div className="h-48 sm:h-56 md:h-64 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center border border-blue-200">
+              <div className="text-center px-4">
+                <Activity className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 mx-auto mb-3" />
+                <p className="text-blue-700 text-sm sm:text-base font-semibold">Gráfico de Evolución</p>
+                <p className="text-xs sm:text-sm text-blue-600 mt-2 break-words">Columnas: {kpisLinea[0].inputs?.join(', ')}</p>
+                <p className="text-xs text-blue-500 mt-1">Datos simulados por día</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts Row 2: Donut Charts - RESPONSIVE */}
+      {kpisDonut.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          {kpisDonut.slice(0, 2).map((kpi: any, index: number) => (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
+                </div>
+                <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium self-start sm:self-center">Donut</span>
+              </div>
+              <div className="h-48 sm:h-56 md:h-64 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg flex items-center justify-center border border-purple-200">
+                <div className="text-center px-4">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-8 border-purple-400 border-t-purple-200 mx-auto mb-3"></div>
+                  <p className="text-purple-700 text-sm sm:text-base font-semibold">Distribución</p>
+                  <p className="text-xs sm:text-sm text-purple-600 mt-2 break-words">Columnas: {kpi.inputs?.join(', ')}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Charts Row 3: Bar Charts - RESPONSIVE */}
+      {kpisBarras.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          {kpisBarras.slice(0, 2).map((kpi: any, index: number) => (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
+                </div>
+                <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium self-start sm:self-center">
+                  {kpi.tipo_grafico.includes('vertical') ? 'Barras V' : 'Barras H'}
+                </span>
+              </div>
+              <div className="h-48 sm:h-56 md:h-64 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg flex items-center justify-center border border-green-200">
+                <div className="text-center px-4">
+                  <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 text-green-500 mx-auto mb-3" />
+                  <p className="text-green-700 text-sm sm:text-base font-semibold">Gráfico de Comparación</p>
+                  <p className="text-xs sm:text-sm text-green-600 mt-2 break-words">Columnas: {kpi.inputs?.join(', ')}</p>
+                  <p className="text-xs text-green-500 mt-1">Rendimiento por categoría</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Summary Banner - RESPONSIVE */}
+      <div className="bg-gradient-to-r from-buffalo-green to-green-600 rounded-xl shadow-lg p-4 sm:p-6 text-white mb-4 sm:mb-6">
+        <h4 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">📊 Resumen del Dashboard</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+            <p className="text-green-100 text-xs sm:text-sm mb-1">Total KPIs</p>
+            <p className="text-2xl sm:text-3xl font-bold">{kpiData.total_kpis || kpiData.kpis?.length || 0}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+            <p className="text-green-100 text-xs sm:text-sm mb-1">Columnas DB</p>
+            <p className="text-2xl sm:text-3xl font-bold">{formData.columnasPostgres?.length || 0}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+            <p className="text-green-100 text-xs sm:text-sm mb-1">Gráficos</p>
+            <p className="text-2xl sm:text-3xl font-bold">
+              {kpiData.kpis?.filter((k: any) => k.tipo_grafico !== 'individual').length || 0}
+            </p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+            <p className="text-green-100 text-xs sm:text-sm mb-1">Estado</p>
+            <p className="text-2xl sm:text-3xl font-bold">✓ Listo</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Info Note - RESPONSIVE */}
+      <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-2">💡 Información del Preview</h3>
+        <p className="text-sm sm:text-base text-blue-800 mb-3">
+          Este es un preview simulado del dashboard. El dashboard real se generará al crear el cliente y se poblará con datos reales desde PostgreSQL.
+        </p>
+        <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
+          <li>✓ Los gráficos mostrarán datos en tiempo real</li>
+          <li>✓ Los KPIs se actualizarán automáticamente</li>
+          <li>✓ Filtros por fecha, campaña e idioma disponibles</li>
+          <li>✓ Análisis ML opcional para predicciones</li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 export default function CrearClientePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
-  const totalSteps = 5
+  const totalSteps = 6  // ✅ Cambiado de 5 a 6 para incluir preview dashboard
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [kpiLoading, setKpiLoading] = useState(false)
@@ -583,11 +837,14 @@ export default function CrearClientePage() {
       webhookLlamadasProbar: '',
       webhookLlamadasCampaña: '',
       webhookLlamadasDatabase: '',
+      webhookLlamadasEnviarJson: '',
       // Webhooks de Texto
       webhookTextoDashboard: '',
       webhookTextoDatabase: '',
+      webhookTextoEnviarJson: '',
       // Webhooks de Automatizaciones
-      webhookAutomatizacionesDashboard: ''
+      webhookAutomatizacionesDashboard: '',
+      webhookAutomatizacionesEnviarJson: ''
     },
     columnasPostgres: [] as any[]
   })
@@ -618,10 +875,40 @@ export default function CrearClientePage() {
     console.log('   ✅ Ahora: clienteId (UUID) incluido en payload')
     console.log('   📍 Ubicación: Línea ~866')
     console.log('')
-    console.log('4️⃣ Columnas PostgreSQL:')
+    console.log('4️⃣ KPIs - Estructura de Datos:')
+    console.log('   ❌ Antes: Solo JSON en memoria')
+    console.log('   ✅ Ahora: Preparados para tabla PostgreSQL con cliente_id')
+    console.log('   📍 Ubicación: Línea ~965')
+    console.log('   💾 Tabla: kpis (id, cliente_id, titulo, descripcion, ...)')
+    console.log('')
+    console.log('5️⃣ Columnas PostgreSQL:')
     console.log('   ❌ Antes: ID con Date.now() o ai_${Date.now()}_${index}')
     console.log('   ✅ Ahora: crypto.randomUUID()')
     console.log('   📍 Ubicación: Líneas ~640, ~750')
+    console.log('')
+    console.log('6️⃣ Datos Sintéticos en Mapper:')
+    console.log('   ❌ Antes: default = null')
+    console.log('   ✅ Ahora: Datos sintéticos inteligentes')
+    console.log('   📍 Ubicación: Líneas ~1084-1165')
+    console.log('   💡 Extrae ejemplos de descripción (\'ejemplo\', "ejemplo")')
+    console.log('   💡 Fallback basado en tipo de columna y nombre')
+    console.log('')
+    console.log('7️⃣ Nuevo Paso 6: Preview Dashboard')
+    console.log('   ✅ Diseño basado en n8n-dashboard')
+    console.log('   ✅ Muestra KPIs por tipo (individual, línea, barras, donut)')
+    console.log('   ✅ Diseño responsive (mobile, tablet, desktop)')
+    console.log('   📍 Ubicación: Líneas ~569-789')
+    console.log('')
+    console.log('8️⃣ Webhooks Json:')
+    console.log('   ✅ Agregado campo "Webhook Json" a cada vertical')
+    console.log('   📍 Llamadas, Texto/Chat, Automatizaciones')
+    console.log('')
+    console.log('9️⃣ SQL Scripts Auto-generados:')
+    console.log('   ✅ CREATE TABLE con comentarios')
+    console.log('   ✅ Stored Procedure para INSERT')
+    console.log('   ✅ Índices automáticos')
+    console.log('   ✅ Ejemplo de uso incluido')
+    console.log('   📍 Ubicación: Líneas ~1268-1505')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   }, [])
 
@@ -712,6 +999,517 @@ export default function CrearClientePage() {
       ...prev,
       columnasPostgres: []
     }))
+  }
+
+  // Función para guardar columnas PostgreSQL en archivo JSON
+  const guardarColumnasJSON = () => {
+    console.log('💾 === GUARDANDO COLUMNAS EN JSON ===')
+    
+    const columnasConClienteId = {
+      cliente_id: clienteId,
+      nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
+      timestamp: new Date().toISOString(),
+      total_columnas: formData.columnasPostgres?.length || 0,
+      columnas: formData.columnasPostgres || []
+    }
+    
+    console.log('📦 Estructura a guardar:', columnasConClienteId)
+    console.log('📊 Total columnas:', columnasConClienteId.total_columnas)
+    console.log('🔑 Cliente ID:', columnasConClienteId.cliente_id)
+    
+    const dataStr = JSON.stringify(columnasConClienteId, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    
+    const fileName = `columnas-${formData.nombreEmpresa || 'cliente'}-${clienteId.substring(0, 8)}.json`
+    link.href = url
+    link.download = fileName
+    link.click()
+    
+    console.log('✅ Archivo JSON descargado:', fileName)
+    console.log('📁 Guardar en proyecto: ./output/' + fileName)
+    console.log('📄 Contenido del archivo:')
+    console.log(dataStr)
+    
+    URL.revokeObjectURL(url)
+  }
+
+  // Función para guardar KPIs en archivo JSON
+  const guardarKPIsJSON = () => {
+    console.log('💾 === GUARDANDO KPIs EN JSON ===')
+    
+    if (!kpiData || !kpiData.kpis_tabla) {
+      console.error('❌ No hay KPIs para guardar')
+      setError('No hay KPIs generados para guardar')
+      return
+    }
+    
+    const kpisParaGuardar = {
+      cliente_id: clienteId,
+      nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
+      timestamp: kpiData.timestamp || new Date().toISOString(),
+      total_kpis: kpiData.total_kpis || kpiData.kpis?.length || 0,
+      kpis_display: kpiData.kpis, // Para visualización
+      kpis_tabla: kpiData.kpis_tabla // Para inserción en PostgreSQL
+    }
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📦 ESTRUCTURA KPIs A GUARDAR')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔑 Cliente ID:', kpisParaGuardar.cliente_id)
+    console.log('🏢 Nombre Empresa:', kpisParaGuardar.nombre_empresa)
+    console.log('📊 Total KPIs:', kpisParaGuardar.total_kpis)
+    console.log('📋 KPIs Display:', kpisParaGuardar.kpis_display.length, 'elementos')
+    console.log('🗄️ KPIs Tabla:', kpisParaGuardar.kpis_tabla.length, 'registros')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    
+    const dataStr = JSON.stringify(kpisParaGuardar, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    
+    const fileName = `kpis-${formData.nombreEmpresa || 'cliente'}-${clienteId.substring(0, 8)}.json`
+    link.href = url
+    link.download = fileName
+    link.click()
+    
+    console.log('✅ Archivo JSON descargado:', fileName)
+    console.log('📁 Ubicación sugerida en proyecto: ./output/' + fileName)
+    console.log('📁 También disponible en: ./crear_kpis_data.json (si deseas ese nombre)')
+    console.log('')
+    console.log('💡 Para guardar en el proyecto:')
+    console.log('   1. Descarga el archivo desde el navegador')
+    console.log('   2. Muévelo a: ./output/' + fileName)
+    console.log('   3. O guárdalo como: ./crear_kpis_data.json')
+    console.log('')
+    console.log('📄 Contenido del archivo:')
+    console.log(dataStr)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    
+    URL.revokeObjectURL(url)
+    setSuccess(`Archivo ${fileName} descargado exitosamente`)
+  }
+
+  // Función para extraer ejemplos de la descripción
+  const extraerEjemploDeDescripcion = (descripcion: string): string | null => {
+    if (!descripcion) return null
+    
+    // Buscar patrones como: 'ejemplo1', 'ejemplo2', 'ejemplo3'
+    const matchQuotes = descripcion.match(/'([^']+)'/g)
+    if (matchQuotes && matchQuotes.length > 0) {
+      // Eliminar las comillas y tomar el primer ejemplo
+      const primerEjemplo = matchQuotes[0].replace(/'/g, '')
+      console.log(`   💡 Ejemplo extraído de descripción: "${primerEjemplo}"`)
+      return primerEjemplo
+    }
+    
+    // Buscar patrones como: "ejemplo1", "ejemplo2"
+    const matchDoubleQuotes = descripcion.match(/"([^"]+)"/g)
+    if (matchDoubleQuotes && matchDoubleQuotes.length > 0) {
+      const primerEjemplo = matchDoubleQuotes[0].replace(/"/g, '')
+      console.log(`   💡 Ejemplo extraído de descripción: "${primerEjemplo}"`)
+      return primerEjemplo
+    }
+    
+    return null
+  }
+
+  // Función para generar datos sintéticos basados en el tipo de dato
+  const generarDatoSintetico = (tipo: string, nombreColumna: string, descripcion?: string) => {
+    const tipoUpper = tipo.toUpperCase()
+    
+    // Intentar extraer ejemplo de la descripción primero
+    if (descripcion && (tipoUpper.includes('VARCHAR') || tipoUpper.includes('TEXT'))) {
+      const ejemploExtraido = extraerEjemploDeDescripcion(descripcion)
+      if (ejemploExtraido) {
+        return ejemploExtraido
+      }
+    }
+    
+    // Lógica basada en tipo de dato
+    if (tipoUpper.includes('VARCHAR') || tipoUpper.includes('TEXT')) {
+      if (nombreColumna.includes('nombre')) return 'Juan Pérez'
+      if (nombreColumna.includes('telefono') || nombreColumna.includes('phone')) return '+34 612 345 678'
+      if (nombreColumna.includes('email')) return 'ejemplo@empresa.com'
+      if (nombreColumna.includes('ejecutor')) return 'Ana García'
+      if (nombreColumna.includes('conversacion')) return 'Cliente pregunta por servicios disponibles. Agente explica opciones y precios.'
+      if (nombreColumna.includes('transcripcion')) return 'Transcripción de ejemplo de la llamada...'
+      return 'Texto de ejemplo'
+    }
+    
+    if (tipoUpper.includes('INTEGER') || tipoUpper.includes('INT')) {
+      if (nombreColumna.includes('tiempo') || nombreColumna.includes('duracion')) return 120
+      if (nombreColumna.includes('total')) return 150
+      if (nombreColumna.includes('cantidad')) return 45
+      return 100
+    }
+    
+    if (tipoUpper.includes('DECIMAL') || tipoUpper.includes('NUMERIC') || tipoUpper.includes('FLOAT')) {
+      if (nombreColumna.includes('precio') || nombreColumna.includes('cost') || nombreColumna.includes('costo')) return 0.45
+      if (nombreColumna.includes('porcentaje')) return 85.5
+      return 123.45
+    }
+    
+    if (tipoUpper.includes('BOOLEAN') || tipoUpper.includes('BOOL')) {
+      return true
+    }
+    
+    if (tipoUpper.includes('TIMESTAMP') || tipoUpper.includes('DATETIME')) {
+      return new Date().toISOString()
+    }
+    
+    if (tipoUpper.includes('DATE')) {
+      return new Date().toISOString().split('T')[0]
+    }
+    
+    if (tipoUpper.includes('UUID')) {
+      return crypto.randomUUID()
+    }
+    
+    if (tipoUpper.includes('JSON')) {
+      return { ejemplo: 'dato', valor: 123 }
+    }
+    
+    return null
+  }
+
+  // Función para crear mapper normalizado desde columnas y KPIs
+  const crearMapperNormalizado = () => {
+    console.log('🔄 === CREANDO MAPPER NORMALIZADO ===')
+    
+    if (!formData.columnasPostgres || formData.columnasPostgres.length === 0) {
+      console.error('❌ No hay columnas para normalizar')
+      return null
+    }
+    
+    if (!kpiData || !kpiData.kpis_tabla) {
+      console.error('❌ No hay KPIs para normalizar')
+      return null
+    }
+    
+    // Crear estructura normalizada para mapper
+    const mapperNormalizado = {
+      metadata: {
+        cliente_id: clienteId,
+        nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+      },
+      database_schema: {
+        tabla_principal: formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data',
+        columnas: formData.columnasPostgres.map((col: any) => ({
+          id: col.id,
+          nombre: col.nombre,
+          tipo: col.tipo,
+          descripcion: col.descripcion,
+          nullable: true,
+          default: null
+        })),
+        total_columnas: formData.columnasPostgres.length
+      },
+      kpis_mapping: {
+        kpis: kpiData.kpis_tabla.map((kpi: any) => ({
+          kpi_id: kpi.id,
+          titulo: kpi.titulo,
+          tipo_grafico: kpi.tipo_grafico,
+          columnas_origen: JSON.parse(kpi.inputs || '[]'),
+          orden: kpi.orden,
+          activo: kpi.activo
+        })),
+        total_kpis: kpiData.total_kpis
+      },
+      field_mapping: {
+        columna_kpi_relations: formData.columnasPostgres.map((col: any) => {
+          // Buscar KPIs que usan esta columna
+          const kpisRelacionados = kpiData.kpis_tabla.filter((kpi: any) => {
+            const inputs = JSON.parse(kpi.inputs || '[]')
+            return inputs.includes(col.nombre)
+          })
+          
+          return {
+            columna_id: col.id,
+            columna_nombre: col.nombre,
+            tipo_dato: col.tipo,
+            usado_en_kpis: kpisRelacionados.map((kpi: any) => ({
+              kpi_id: kpi.id,
+              kpi_titulo: kpi.titulo,
+              tipo_grafico: kpi.tipo_grafico
+            })),
+            total_kpis_relacionados: kpisRelacionados.length
+          }
+        })
+      },
+      statistics: {
+        total_columnas: formData.columnasPostgres.length,
+        total_kpis: kpiData.total_kpis,
+        columnas_usadas_en_kpis: formData.columnasPostgres.filter((col: any) => {
+          return kpiData.kpis_tabla.some((kpi: any) => {
+            const inputs = JSON.parse(kpi.inputs || '[]')
+            return inputs.includes(col.nombre)
+          })
+        }).length,
+        columnas_sin_uso: formData.columnasPostgres.filter((col: any) => {
+          return !kpiData.kpis_tabla.some((kpi: any) => {
+            const inputs = JSON.parse(kpi.inputs || '[]')
+            return inputs.includes(col.nombre)
+          })
+        }).length
+      }
+    }
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📋 MAPPER NORMALIZADO CREADO')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔑 Cliente ID:', mapperNormalizado.metadata.cliente_id)
+    console.log('🏢 Nombre Empresa:', mapperNormalizado.metadata.nombre_empresa)
+    console.log('📊 Total Columnas:', mapperNormalizado.statistics.total_columnas)
+    console.log('📊 Total KPIs:', mapperNormalizado.statistics.total_kpis)
+    console.log('🔗 Columnas usadas en KPIs:', mapperNormalizado.statistics.columnas_usadas_en_kpis)
+    console.log('⚠️ Columnas sin uso:', mapperNormalizado.statistics.columnas_sin_uso)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    
+    return mapperNormalizado
+  }
+
+  // Función para generar script SQL CREATE TABLE
+  const generarCreateTableSQL = () => {
+    if (!formData.columnasPostgres || formData.columnasPostgres.length === 0) {
+      return ''
+    }
+    
+    const tablaNombre = formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data'
+    
+    let sql = `-- ============================================\n`
+    sql += `-- Tabla: ${tablaNombre}\n`
+    sql += `-- Cliente: ${formData.nombreEmpresa}\n`
+    sql += `-- Cliente ID: ${clienteId}\n`
+    sql += `-- Fecha: ${new Date().toISOString()}\n`
+    sql += `-- ============================================\n\n`
+    
+    sql += `CREATE TABLE IF NOT EXISTS ${tablaNombre} (\n`
+    
+    // Columnas
+    formData.columnasPostgres.forEach((col: any, index: number) => {
+      const notNull = col.nullable === false ? ' NOT NULL' : ''
+      const defaultValue = col.default ? ` DEFAULT '${col.default}'` : ''
+      sql += `  ${col.nombre} ${col.tipo}${notNull}${defaultValue}`
+      
+      if (index < formData.columnasPostgres.length - 1) {
+        sql += ','
+      }
+      
+      if (col.descripcion) {
+        sql += ` -- ${col.descripcion}`
+      }
+      sql += '\n'
+    })
+    
+    sql += `);\n\n`
+    
+    // Índices
+    sql += `-- Índices\n`
+    sql += `CREATE INDEX IF NOT EXISTS idx_${tablaNombre}_created ON ${tablaNombre}(fecha_hora);\n`
+    
+    // Buscar columna de cliente o ejecutor para índice
+    const colCliente = formData.columnasPostgres.find((c: any) => 
+      c.nombre.includes('cliente') || c.nombre.includes('ejecutor')
+    )
+    if (colCliente) {
+      sql += `CREATE INDEX IF NOT EXISTS idx_${tablaNombre}_${colCliente.nombre} ON ${tablaNombre}(${colCliente.nombre});\n`
+    }
+    
+    sql += `\n-- Comentarios de tabla\n`
+    sql += `COMMENT ON TABLE ${tablaNombre} IS 'Tabla generada automáticamente para cliente: ${formData.nombreEmpresa} (${clienteId})';\n`
+    
+    return sql
+  }
+
+  // Función para generar stored procedure INSERT
+  const generarStoredProcedureSQL = () => {
+    if (!formData.columnasPostgres || formData.columnasPostgres.length === 0) {
+      return ''
+    }
+    
+    const tablaNombre = formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data'
+    const procedureName = `sp_insertar_${tablaNombre}`
+    
+    let sql = `-- ============================================\n`
+    sql += `-- Stored Procedure: ${procedureName}\n`
+    sql += `-- Propósito: Insertar registros en ${tablaNombre}\n`
+    sql += `-- ============================================\n\n`
+    
+    sql += `CREATE OR REPLACE FUNCTION ${procedureName}(\n`
+    
+    // Parámetros
+    formData.columnasPostgres.forEach((col: any, index: number) => {
+      sql += `  p_${col.nombre} ${col.tipo}`
+      
+      if (index < formData.columnasPostgres.length - 1) {
+        sql += ','
+      }
+      sql += '\n'
+    })
+    
+    sql += `) RETURNS UUID AS $$\n`
+    sql += `DECLARE\n`
+    sql += `  v_id UUID;\n`
+    sql += `BEGIN\n`
+    sql += `  -- Generar UUID si no existe columna id\n`
+    sql += `  v_id := gen_random_uuid();\n\n`
+    
+    sql += `  -- Insertar registro\n`
+    sql += `  INSERT INTO ${tablaNombre} (\n`
+    
+    // Lista de columnas
+    formData.columnasPostgres.forEach((col: any, index: number) => {
+      sql += `    ${col.nombre}`
+      if (index < formData.columnasPostgres.length - 1) {
+        sql += ','
+      }
+      sql += '\n'
+    })
+    
+    sql += `  ) VALUES (\n`
+    
+    // Lista de valores (parámetros)
+    formData.columnasPostgres.forEach((col: any, index: number) => {
+      sql += `    p_${col.nombre}`
+      if (index < formData.columnasPostgres.length - 1) {
+        sql += ','
+      }
+      sql += '\n'
+    })
+    
+    sql += `  );\n\n`
+    sql += `  RETURN v_id;\n`
+    sql += `END;\n`
+    sql += `$$ LANGUAGE plpgsql;\n\n`
+    
+    // Ejemplo de uso
+    sql += `-- ============================================\n`
+    sql += `-- Ejemplo de uso:\n`
+    sql += `-- ============================================\n`
+    sql += `-- SELECT ${procedureName}(\n`
+    formData.columnasPostgres.forEach((col: any, index: number) => {
+      const ejemploValor = generarDatoSintetico(col.tipo, col.nombre, col.descripcion)
+      const valorSQL = typeof ejemploValor === 'string' ? `'${ejemploValor}'` : 
+                       ejemploValor === null ? 'NULL' : 
+                       typeof ejemploValor === 'object' ? `'${JSON.stringify(ejemploValor)}'::jsonb` :
+                       ejemploValor
+      
+      sql += `--   ${valorSQL}`
+      if (index < formData.columnasPostgres.length - 1) {
+        sql += ','
+      }
+      sql += `  -- ${col.nombre}\n`
+    })
+    sql += `-- );\n`
+    
+    return sql
+  }
+
+  // Función para guardar mapper normalizado en JSON
+  const guardarMapperJSON = () => {
+    console.log('💾 === GUARDANDO MAPPER NORMALIZADO EN JSON ===')
+    
+    const mapper = crearMapperNormalizado()
+    
+    if (!mapper) {
+      setError('No se puede crear el mapper. Asegúrate de tener columnas y KPIs generados.')
+      return
+    }
+    
+    const dataStr = JSON.stringify(mapper, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    
+    const fileName = `mapper-${formData.nombreEmpresa || 'cliente'}-${clienteId.substring(0, 8)}.json`
+    link.href = url
+    link.download = fileName
+    link.click()
+    
+    console.log('✅ Archivo Mapper JSON descargado:', fileName)
+    console.log('📁 Ubicación sugerida en proyecto: ./output/' + fileName)
+    console.log('📁 También disponible en: ./scripts/field-mapping.json')
+    console.log('')
+    console.log('📄 Contenido del archivo:')
+    console.log(dataStr)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    
+    URL.revokeObjectURL(url)
+    setSuccess(`Archivo mapper ${fileName} descargado exitosamente`)
+  }
+
+  // Función para guardar SQL scripts en JSON
+  const guardarSQLScriptsJSON = () => {
+    console.log('💾 === GUARDANDO SQL SCRIPTS EN JSON ===')
+    
+    const createTableScript = generarCreateTableSQL()
+    const storedProcedureScript = generarStoredProcedureSQL()
+    
+    if (!createTableScript || !storedProcedureScript) {
+      console.error('❌ No se pudieron generar los scripts SQL')
+      return
+    }
+    
+    const sqlScripts = {
+      metadata: {
+        cliente_id: clienteId,
+        nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
+        tabla_nombre: formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data',
+        timestamp: new Date().toISOString(),
+        total_columnas: formData.columnasPostgres?.length || 0
+      },
+      create_table: {
+        descripcion: 'Script SQL para crear la tabla principal',
+        script: createTableScript
+      },
+      stored_procedure: {
+        descripcion: 'Stored procedure para insertar registros',
+        procedure_name: `sp_insertar_${formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data'}`,
+        script: storedProcedureScript
+      },
+      columnas_detalle: formData.columnasPostgres.map((col: any) => ({
+        nombre: col.nombre,
+        tipo: col.tipo,
+        descripcion: col.descripcion,
+        ejemplo_valor: generarDatoSintetico(col.tipo, col.nombre, col.descripcion)
+      }))
+    }
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📦 SQL SCRIPTS GENERADOS')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔑 Cliente ID:', sqlScripts.metadata.cliente_id)
+    console.log('🗄️ Tabla:', sqlScripts.metadata.tabla_nombre)
+    console.log('📊 Total Columnas:', sqlScripts.metadata.total_columnas)
+    console.log('📝 CREATE TABLE: ✅')
+    console.log('⚙️ Stored Procedure:', sqlScripts.stored_procedure.procedure_name)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    
+    const dataStr = JSON.stringify(sqlScripts, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    
+    const fileName = `sql-scripts-${formData.nombreEmpresa || 'cliente'}-${clienteId.substring(0, 8)}.json`
+    link.href = url
+    link.download = fileName
+    link.click()
+    
+    console.log('✅ Archivo SQL Scripts JSON descargado:', fileName)
+    console.log('📁 Ubicación sugerida: ./database/' + fileName)
+    console.log('')
+    console.log('📄 CREATE TABLE Script:')
+    console.log(createTableScript)
+    console.log('')
+    console.log('⚙️ Stored Procedure Script:')
+    console.log(storedProcedureScript)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    
+    URL.revokeObjectURL(url)
   }
 
   // Función para generar columnas con IA
@@ -825,7 +1623,31 @@ export default function CrearClientePage() {
 
         console.log('💾 Estado actualizado - formData.columnasPostgres actualizado')
         
-        setSuccess(`¡Excelente! Se generaron ${columnasGeneradas.length} columnas automáticamente con IA`)
+        // Guardar automáticamente en JSON
+        console.log('💾 Guardando columnas automáticamente en JSON...')
+        const columnasParaGuardar = {
+          cliente_id: clienteId,
+          nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
+          timestamp: new Date().toISOString(),
+          total_columnas: columnasGeneradas.length,
+          columnas: columnasGeneradas
+        }
+        
+        setTimeout(() => {
+          const dataStr = JSON.stringify(columnasParaGuardar, null, 2)
+          const dataBlob = new Blob([dataStr], { type: 'application/json' })
+          const url = URL.createObjectURL(dataBlob)
+          const link = document.createElement('a')
+          const fileName = `columnas-${formData.nombreEmpresa || 'cliente'}-${clienteId.substring(0, 8)}.json`
+          link.href = url
+          link.download = fileName
+          link.click()
+          console.log('✅ Archivo columnas JSON descargado automáticamente:', fileName)
+          console.log('📁 Guardar en proyecto: ./output/' + fileName)
+          URL.revokeObjectURL(url)
+        }, 500)
+        
+        setSuccess(`¡Excelente! Se generaron ${columnasGeneradas.length} columnas automáticamente con IA y se guardaron en JSON`)
         setAiPrompt('') // Limpiar el prompt
         
         console.log('🎉 === FIN generarColumnasConIA (EXITOSO) ===')
@@ -945,12 +1767,228 @@ export default function CrearClientePage() {
         
         console.log('✅ KPIs - Total KPIs generados:', kpiResponse.kpis.length)
         
-        setKpiData(kpiResponse.kpis)
+        // Preparar KPIs para estructura de tabla con cliente_id
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('📝 PREPARANDO KPIs PARA TABLA DE BASE DE DATOS')
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('❌ ANTES: KPIs sin cliente_id (solo JSON)')
+        console.log('   Estructura: { kpis: [...] }')
+        console.log('')
+        console.log('✅ AHORA: KPIs preparados para tabla PostgreSQL')
+        
+        const timestamp = new Date().toISOString()
+        
+        // Crear registros individuales para cada KPI (formato tabla)
+        const kpisParaTabla = kpiResponse.kpis.map((kpi: any, index: number) => ({
+          id: crypto.randomUUID(),
+          cliente_id: clienteId,
+          titulo: kpi.titulo,
+          descripcion: kpi.descripcion,
+          tipo_grafico: kpi.tipo_grafico,
+          num_inputs: kpi.num_inputs,
+          inputs: JSON.stringify(kpi.inputs), // Array como JSON string para PostgreSQL
+          ejemplo: kpi.ejemplo || null,
+          orden: index + 1,
+          activo: true,
+          fecha_creacion: timestamp
+        }))
+        
+        // Estructura completa con metadata
+        const kpisConClienteId = {
+          cliente_id: clienteId,
+          timestamp: timestamp,
+          total_kpis: kpiResponse.kpis.length,
+          kpis: kpiResponse.kpis, // Original para display
+          kpis_tabla: kpisParaTabla // Formato tabla para inserción
+        }
+        
+        console.log('   Estructura tabla: tabla_kpis')
+        console.log('   Columnas: id (UUID), cliente_id (UUID), titulo, descripcion, tipo_grafico, num_inputs, inputs (JSON), ejemplo, orden, activo, fecha_creacion')
+        console.log('')
+        console.log('📊 Registros preparados para inserción:')
+        kpisParaTabla.forEach((kpi: any, index: number) => {
+          console.log(`   ${index + 1}. ID: ${kpi.id} | Cliente: ${kpi.cliente_id} | Título: ${kpi.titulo}`)
+        })
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('📦 KPIs completos:', kpisConClienteId)
+        console.log('📦 KPIs para tabla (formato PostgreSQL):')
+        kpisParaTabla.forEach((kpi: any) => {
+          console.log('  -', kpi)
+        })
+        
+        setKpiData(kpisConClienteId)
         setKpiGenerated(true)
         
-        console.log('💾 Estado actualizado - kpiData y kpiGenerated actualizados')
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('💾 PREPARACIÓN PARA BASE DE DATOS')
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('✅ Estado actualizado - kpiData guardado EN MEMORIA')
+        console.log('📋 Estructura sugerida para tabla PostgreSQL:')
+        console.log('')
+        console.log('CREATE TABLE kpis (')
+        console.log('  id UUID PRIMARY KEY,')
+        console.log('  cliente_id UUID NOT NULL,')
+        console.log('  titulo VARCHAR(255) NOT NULL,')
+        console.log('  descripcion TEXT,')
+        console.log('  tipo_grafico VARCHAR(50),')
+        console.log('  num_inputs INTEGER,')
+        console.log('  inputs JSONB,')
+        console.log('  ejemplo TEXT,')
+        console.log('  orden INTEGER,')
+        console.log('  activo BOOLEAN DEFAULT true,')
+        console.log('  fecha_creacion TIMESTAMP DEFAULT NOW()')
+        console.log(');')
+        console.log('')
+        console.log('💡 Datos listos para:')
+        console.log('   - Inserción en PostgreSQL')
+        console.log('   - Total registros:', kpisParaTabla.length)
+        console.log('   - Cliente ID:', clienteId)
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
         
-        setSuccess(`¡KPIs generados exitosamente! Se han creado ${kpiResponse.kpis.length} KPIs para el cliente.`)
+        // Guardar automáticamente KPIs en JSON
+        console.log('💾 Guardando KPIs automáticamente en JSON...')
+        const kpisParaGuardarAuto = {
+          cliente_id: clienteId,
+          nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
+          timestamp: timestamp,
+          total_kpis: kpiResponse.kpis.length,
+          kpis_display: kpiResponse.kpis,
+          kpis_tabla: kpisParaTabla
+        }
+        
+        setTimeout(() => {
+          // Guardar KPIs
+          const dataStr = JSON.stringify(kpisParaGuardarAuto, null, 2)
+          const dataBlob = new Blob([dataStr], { type: 'application/json' })
+          const url = URL.createObjectURL(dataBlob)
+          const link = document.createElement('a')
+          const fileName = `kpis-${formData.nombreEmpresa || 'cliente'}-${clienteId.substring(0, 8)}.json`
+          link.href = url
+          link.download = fileName
+          link.click()
+          console.log('✅ Archivo KPIs JSON descargado automáticamente:', fileName)
+          console.log('📁 Guardar en proyecto: ./output/' + fileName)
+          URL.revokeObjectURL(url)
+        }, 500)
+        
+        // Crear y guardar mapper normalizado automáticamente
+        setTimeout(() => {
+          console.log('🔄 Creando mapper normalizado automáticamente...')
+          
+          // Crear mapper con los datos actuales (no esperar a state)
+          const mapperData = {
+            metadata: {
+              cliente_id: clienteId,
+              nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
+              timestamp: timestamp,
+              version: '1.0.0'
+            },
+            database_schema: {
+              tabla_principal: formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data',
+              columnas: formData.columnasPostgres.map((col: any) => ({
+                id: col.id,
+                nombre: col.nombre,
+                tipo: col.tipo,
+                descripcion: col.descripcion,
+                nullable: true,
+                default: generarDatoSintetico(col.tipo, col.nombre, col.descripcion)  // ✅ Datos sintéticos inteligentes
+              })),
+              total_columnas: formData.columnasPostgres.length
+            },
+            kpis_mapping: {
+              kpis: kpisParaTabla.map((kpi: any) => ({
+                kpi_id: kpi.id,
+                titulo: kpi.titulo,
+                tipo_grafico: kpi.tipo_grafico,
+                columnas_origen: JSON.parse(kpi.inputs || '[]'),
+                orden: kpi.orden,
+                activo: kpi.activo
+              })),
+              total_kpis: kpiResponse.kpis.length
+            },
+            field_mapping: {
+              columna_kpi_relations: formData.columnasPostgres.map((col: any) => {
+                const kpisRelacionados = kpisParaTabla.filter((kpi: any) => {
+                  const inputs = JSON.parse(kpi.inputs || '[]')
+                  return inputs.includes(col.nombre)
+                })
+                
+                return {
+                  columna_id: col.id,
+                  columna_nombre: col.nombre,
+                  tipo_dato: col.tipo,
+                  usado_en_kpis: kpisRelacionados.map((kpi: any) => ({
+                    kpi_id: kpi.id,
+                    kpi_titulo: kpi.titulo,
+                    tipo_grafico: kpi.tipo_grafico
+                  })),
+                  total_kpis_relacionados: kpisRelacionados.length
+                }
+              })
+            },
+            statistics: {
+              total_columnas: formData.columnasPostgres.length,
+              total_kpis: kpiResponse.kpis.length,
+              columnas_usadas_en_kpis: formData.columnasPostgres.filter((col: any) => {
+                return kpisParaTabla.some((kpi: any) => {
+                  const inputs = JSON.parse(kpi.inputs || '[]')
+                  return inputs.includes(col.nombre)
+                })
+              }).length,
+              columnas_sin_uso: formData.columnasPostgres.filter((col: any) => {
+                return !kpisParaTabla.some((kpi: any) => {
+                  const inputs = JSON.parse(kpi.inputs || '[]')
+                  return inputs.includes(col.nombre)
+                })
+              }).length
+            }
+          }
+          
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+          console.log('📋 MAPPER NORMALIZADO CREADO')
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+          console.log('🔑 Cliente ID:', mapperData.metadata.cliente_id)
+          console.log('🏢 Nombre Empresa:', mapperData.metadata.nombre_empresa)
+          console.log('📊 Total Columnas:', mapperData.statistics.total_columnas)
+          console.log('📊 Total KPIs:', mapperData.statistics.total_kpis)
+          console.log('🔗 Columnas usadas en KPIs:', mapperData.statistics.columnas_usadas_en_kpis)
+          console.log('⚠️ Columnas sin uso:', mapperData.statistics.columnas_sin_uso)
+          console.log('✨ Datos sintéticos generados en campo "default" para cada columna')
+          console.log('💡 Método: Extrae ejemplos de descripción o genera según tipo')
+          console.log('')
+          console.log('📊 Ejemplos de datos sintéticos generados:')
+          mapperData.database_schema.columnas.forEach((col: any, idx: number) => {
+            const valorMostrar = typeof col.default === 'object' ? JSON.stringify(col.default) : col.default
+            const esExtraido = col.descripcion && col.descripcion.includes("'")
+            console.log(`   ${idx + 1}. ${col.nombre} (${col.tipo}): ${valorMostrar}${esExtraido ? ' 💡' : ''}`)
+          })
+          console.log('   💡 = Valor extraído de descripción')
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+          
+          // Guardar el mapper
+          const dataStr = JSON.stringify(mapperData, null, 2)
+          const dataBlob = new Blob([dataStr], { type: 'application/json' })
+          const url = URL.createObjectURL(dataBlob)
+          const link = document.createElement('a')
+          const fileName = `mapper-${formData.nombreEmpresa || 'cliente'}-${clienteId.substring(0, 8)}.json`
+          link.href = url
+          link.download = fileName
+          link.click()
+          
+          console.log('✅ Archivo Mapper JSON descargado automáticamente:', fileName)
+          console.log('📁 Ubicación sugerida en proyecto: ./output/' + fileName)
+          console.log('📁 También disponible en: ./scripts/field-mapping.json')
+          
+          URL.revokeObjectURL(url)
+        }, 1000)
+        
+        // Generar y guardar SQL Scripts automáticamente
+        setTimeout(() => {
+          console.log('🔄 Generando SQL Scripts automáticamente...')
+          guardarSQLScriptsJSON()
+        }, 1500)
+        
+        setSuccess(`¡KPIs generados exitosamente! Se han creado ${kpiResponse.kpis.length} KPIs. Archivos guardados: KPIs JSON, Mapper y SQL Scripts.`)
         
         console.log('🎉 === FIN generarKPIs (EXITOSO) ===')
         
@@ -1060,8 +2098,14 @@ export default function CrearClientePage() {
         console.log('   - Webhooks configurados:', webhooksConfigurados.length)
         if (webhooksConfigurados.length > 0) {
           webhooksConfigurados.forEach(key => {
-            console.log(`     • ${key}:`, formData.webhooks[key])
+            const isEnviarJson = key.includes('EnviarJson')
+            console.log(`     ${isEnviarJson ? '📤' : '•'} ${key}:`, formData.webhooks[key])
           })
+          
+          const enviarJsonCount = webhooksConfigurados.filter(k => k.includes('EnviarJson')).length
+          if (enviarJsonCount > 0) {
+            console.log(`   ✅ Webhooks Json configurados: ${enviarJsonCount}`)
+          }
         } else {
           console.log('   - No se configuraron webhooks')
         }
@@ -1075,6 +2119,16 @@ export default function CrearClientePage() {
             console.log(`     ${index + 1}. ${col.nombre} (${col.tipo}) - ID: ${col.id}`)
           })
         }
+        break
+      
+      case 5:
+        console.log('📋 Paso 5 (Generar KPIs) completado:')
+        console.log('   - KPIs generados:', kpiData?.total_kpis || kpiData?.kpis?.length || 0)
+        console.log('   - Archivos generados automáticamente:')
+        console.log('     ✅ KPIs JSON')
+        console.log('     ✅ Mapper normalizado (con datos sintéticos)')
+        console.log('     ✅ SQL Scripts (CREATE TABLE + Stored Procedure)')
+        console.log('   → Avanzando a Preview Dashboard (Paso 6)')
         break
     }
     
@@ -1097,7 +2151,8 @@ export default function CrearClientePage() {
           { key: 'webhookLlamadasDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/llamadas/dashboard' },
           { key: 'webhookLlamadasProbar', label: 'Webhook Probar', placeholder: 'https://api.ejemplo.com/webhook/llamadas/probar' },
           { key: 'webhookLlamadasCampaña', label: 'Webhook Campaña', placeholder: 'https://api.ejemplo.com/webhook/llamadas/campaña' },
-          { key: 'webhookLlamadasDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/llamadas/database' }
+          { key: 'webhookLlamadasDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/llamadas/database' },
+          { key: 'webhookLlamadasEnviarJson', label: 'Webhook Json', placeholder: 'https://api.ejemplo.com/webhook/llamadas/json' }
         ]
       })
     }
@@ -1108,7 +2163,8 @@ export default function CrearClientePage() {
         icon: MessageSquare,
         webhooks: [
           { key: 'webhookTextoDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/texto/dashboard' },
-          { key: 'webhookTextoDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/texto/database' }
+          { key: 'webhookTextoDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/texto/database' },
+          { key: 'webhookTextoEnviarJson', label: 'Webhook Json', placeholder: 'https://api.ejemplo.com/webhook/texto/json' }
         ]
       })
     }
@@ -1118,7 +2174,8 @@ export default function CrearClientePage() {
         title: 'Webhooks de Automatizaciones',
         icon: Bot,
         webhooks: [
-          { key: 'webhookAutomatizacionesDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/dashboard' }
+          { key: 'webhookAutomatizacionesDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/dashboard' },
+          { key: 'webhookAutomatizacionesEnviarJson', label: 'Webhook Json', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/json' }
         ]
       })
     }
@@ -1177,7 +2234,7 @@ export default function CrearClientePage() {
         verticales: formData.verticales,
         webhooks: formData.webhooks,
         columnasPostgres: formData.columnasPostgres,
-        kpisGenerados: kpiData,
+        kpisGenerados: kpiData,  // ✅ Incluye: { cliente_id, timestamp, total_kpis, kpis: [...] }
         estado: 'Activo',
         fechaCreacion: new Date().toISOString()
       }
@@ -1191,8 +2248,38 @@ export default function CrearClientePage() {
       console.log('   - Tipo:', nuevoCliente.tipoCliente)
       console.log('   - Verticales activas:', Object.keys(nuevoCliente.verticales).filter(k => nuevoCliente.verticales[k]))
       console.log('   - Columnas PostgreSQL:', nuevoCliente.columnasPostgres?.length || 0)
-      console.log('   - KPIs generados:', nuevoCliente.kpisGenerados?.length || 0)
-      console.log('   - Webhooks configurados:', Object.keys(nuevoCliente.webhooks).filter(k => nuevoCliente.webhooks[k]).length)
+      console.log('   - KPIs generados:', nuevoCliente.kpisGenerados?.total_kpis || nuevoCliente.kpisGenerados?.kpis?.length || 0)
+      console.log('   - KPIs cliente_id:', nuevoCliente.kpisGenerados?.cliente_id || 'N/A')
+      console.log('   - KPIs formato tabla:', nuevoCliente.kpisGenerados?.kpis_tabla?.length || 0, 'registros listos para PostgreSQL')
+      
+      const webhooksConfigurados = Object.keys(nuevoCliente.webhooks).filter(k => nuevoCliente.webhooks[k])
+      const webhooksJson = webhooksConfigurados.filter(k => k.includes('EnviarJson'))
+      console.log('   - Webhooks configurados:', webhooksConfigurados.length)
+      console.log('   - Webhooks Json:', webhooksJson.length)
+      
+      if (webhooksJson.length > 0) {
+        console.log('   📤 Webhooks Json configurados:')
+        webhooksJson.forEach(key => {
+          console.log(`     • ${key}: ${nuevoCliente.webhooks[key]}`)
+        })
+      }
+      
+      if (nuevoCliente.kpisGenerados?.kpis_tabla && nuevoCliente.kpisGenerados.kpis_tabla.length > 0) {
+        console.log('')
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        console.log('📊 REGISTROS KPIs LISTOS PARA INSERTAR EN TABLA:')
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+        nuevoCliente.kpisGenerados.kpis_tabla.forEach((kpi: any, index: number) => {
+          console.log(`${index + 1}. INSERT INTO kpis VALUES (`)
+          console.log(`     id: '${kpi.id}',`)
+          console.log(`     cliente_id: '${kpi.cliente_id}',`)
+          console.log(`     titulo: '${kpi.titulo}',`)
+          console.log(`     tipo_grafico: '${kpi.tipo_grafico}',`)
+          console.log(`     orden: ${kpi.orden}`)
+          console.log(`   )`)
+        })
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      }
 
       // Aquí iría la llamada a la API para crear el cliente
       console.log('⚠️ NOTA: No hay endpoint configurado aún para crear cliente')
@@ -1279,6 +2366,7 @@ export default function CrearClientePage() {
           {currentStep === 3 && <Step3 formData={formData} handleWebhookChange={handleWebhookChange} getWebhookGroups={getWebhookGroups} />}
           {currentStep === 4 && <Step4 formData={formData} addColumna={addColumna} updateColumna={updateColumna} removeColumna={removeColumna} limpiarColumnas={limpiarColumnas} tiposDatos={tiposDatos} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} generarColumnasConIA={generarColumnasConIA} aiLoading={aiLoading} />}
           {currentStep === 5 && <Step5 formData={formData} generarKPIs={generarKPIs} kpiLoading={kpiLoading} kpiGenerated={kpiGenerated} kpiData={kpiData} />}
+          {currentStep === 6 && <Step6 formData={formData} kpiData={kpiData} clienteId={clienteId} />}
         </div>
 
         {/* Navegación */}

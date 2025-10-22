@@ -1,0 +1,74 @@
+{
+  "cliente_id": "5bd7411e-6fc1-4dc9-a898-77b4cadab6c9",
+  "nombre_empresa": "empresa-test90",
+  "timestamp": "2025-10-22T00:17:31.296Z",
+  "total_columnas": 11,
+  "columnas": [
+    {
+      "id": "2df010fb-8ba0-40e7-be93-95ade0005eb8",
+      "nombre": "id_llamada",
+      "tipo": "UUID",
+      "descripcion": "Identificador único de cada llamada."
+    },
+    {
+      "id": "e3973be3-f63d-48c5-af2a-10379b1483a9",
+      "nombre": "tiempo_llamada",
+      "tipo": "INTEGER",
+      "descripcion": "Duración total de la llamada en segundos."
+    },
+    {
+      "id": "2adc9024-29f5-413d-9320-a0a310a193ce",
+      "nombre": "llamada_realizada",
+      "tipo": "BOOLEAN",
+      "descripcion": "Indica si la llamada fue completada (TRUE) o no (FALSE)."
+    },
+    {
+      "id": "ac1be21d-f3f5-4bed-8cc1-7526e813034e",
+      "nombre": "nombre_ejecutor",
+      "tipo": "VARCHAR(255)",
+      "descripcion": "Nombre de la persona o agente que realizó la llamada."
+    },
+    {
+      "id": "0cce78fe-81c6-4cdf-be0c-dcd2e96e7f00",
+      "nombre": "datos_ejecutor",
+      "tipo": "JSONB",
+      "descripcion": "Información adicional sobre la persona que ejecutó la llamada, como ID de empleado, departamento, etc."
+    },
+    {
+      "id": "9090e6ec-3c70-47e4-9802-32be024c7c80",
+      "nombre": "fecha_hora",
+      "tipo": "TIMESTAMP",
+      "descripcion": "Fecha y hora exacta en que se inició la llamada."
+    },
+    {
+      "id": "cf469a7e-7532-4470-92a1-0d6f446dae8d",
+      "nombre": "tiempo_espera",
+      "tipo": "INTEGER",
+      "descripcion": "Tiempo que el usuario esperó en cola antes de ser atendido, en segundos."
+    },
+    {
+      "id": "22a91be8-219d-43d1-be12-1be4ed93116c",
+      "nombre": "motivo_desconexion",
+      "tipo": "VARCHAR(255)",
+      "descripcion": "Razón por la cual la llamada fue desconectada. Ejemplos: 'usuario cuelga', 'agente cuelga', 'no hay respuesta', 'ocupado', 'tiempo máximo', 'problema técnico'."
+    },
+    {
+      "id": "ac6410c7-af0e-48a1-ab60-47dd4f74d1e7",
+      "nombre": "sentimiento_usuario",
+      "tipo": "VARCHAR(255)",
+      "descripcion": "Sentimiento general del usuario durante la llamada. Puede ser 'Positive', 'Negative', 'Neutral' o 'Unknown'."
+    },
+    {
+      "id": "a58dfff5-16c7-4d96-b6fc-a1d46dc193ca",
+      "nombre": "costo_llamada",
+      "tipo": "DECIMAL(10,2)",
+      "descripcion": "Costo monetario asociado a la llamada."
+    },
+    {
+      "id": "35e185e1-2857-40a5-9c93-19c7dfa3ab84",
+      "nombre": "conversacion_sostenida",
+      "tipo": "TEXT",
+      "descripcion": "Transcripción o resumen de la conversación sostenida durante la llamada."
+    }
+  ]
+}
