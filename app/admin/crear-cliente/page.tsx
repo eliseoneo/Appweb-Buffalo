@@ -18,7 +18,9 @@ import {
   BarChart3,
   Database,
   Trash2,
-  Activity
+  Activity,
+  Download,
+  Send
 } from 'lucide-react'
 
 // Componente del indicador de pasos
@@ -448,12 +450,15 @@ const Step4 = ({ formData, addColumna, updateColumna, removeColumna, limpiarColu
 }
 
 // Componente del Paso 5: Generar KPIs
-const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData }: { 
+const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, enviarMapperViaWebhook, guardarMapperJSON, guardarSQLScriptsJSON }: { 
   formData: any, 
   generarKPIs: () => void,
   kpiLoading: boolean,
   kpiGenerated: boolean,
-  kpiData: any
+  kpiData: any,
+  enviarMapperViaWebhook: () => void,
+  guardarMapperJSON: () => void,
+  guardarSQLScriptsJSON: () => void
 }) => {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -530,6 +535,50 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData }: {
                   <li>✓ Mapper Normalizado (relaciones columnas-KPIs con datos sintéticos)</li>
                   <li>✓ SQL Scripts (CREATE TABLE + Stored Procedure)</li>
                   <li>✓ Los JSON se pueden enviar via "Webhook Json"</li>
+                </ul>
+              </div>
+
+              {/* Botones de acción adicionales */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  onClick={guardarMapperJSON}
+                  className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Mapper JSON
+                </button>
+                
+                <button
+                  onClick={guardarSQLScriptsJSON}
+                  className="flex items-center justify-center px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Descargar SQL Scripts
+                </button>
+                
+                <button
+                  onClick={enviarMapperViaWebhook}
+                  className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar via Webhook Json
+                </button>
+              </div>
+
+              {/* Información sobre webhooks Json */}
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                  <Send className="h-4 w-4 mr-2" />
+                  Envío via Webhook Json
+                </h4>
+                <p className="text-xs text-green-700 mb-2">
+                  El botón "Enviar via Webhook Json" enviará el mapper JSON a todos los webhooks configurados en el paso 3.
+                </p>
+                <ul className="text-xs text-green-600 space-y-1">
+                  <li>• Se envía a todos los webhooks "Webhook Json" configurados</li>
+                  <li>• Incluye mapper completo + columnas PostgreSQL + datos KPIs</li>
+                  <li>• Método POST con Content-Type: application/json</li>
+                  <li>• Respuesta detallada en consola del navegador</li>
                 </ul>
               </div>
             </div>
@@ -617,7 +666,7 @@ const Step6 = ({ formData, kpiData, clienteId }: {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">
-                {formData.nombreEmpresa} - Dashboard Preview
+                {formData.nombreEmpresa || 'Cliente'} - Dashboard Preview
               </h1>
               <p className="text-xs sm:text-sm text-gray-600 mt-1">Vista previa del dashboard con KPIs generados</p>
             </div>
@@ -1174,6 +1223,49 @@ export default function CrearClientePage() {
     return null
   }
 
+  // Función para generar ejemplo SQL basado en tipo de dato
+  const generarEjemploSQL = (tipo: string, nombreColumna: string, descripcion?: string) => {
+    const ejemploValor = generarDatoSintetico(tipo, nombreColumna, descripcion)
+    
+    if (ejemploValor === null) return 'NULL'
+    
+    const tipoUpper = tipo.toUpperCase()
+    
+    if (tipoUpper.includes('VARCHAR') || tipoUpper.includes('TEXT')) {
+      return `'${ejemploValor}'`
+    }
+    
+    if (tipoUpper.includes('INTEGER') || tipoUpper.includes('INT')) {
+      return ejemploValor.toString()
+    }
+    
+    if (tipoUpper.includes('DECIMAL') || tipoUpper.includes('NUMERIC') || tipoUpper.includes('FLOAT')) {
+      return ejemploValor.toString()
+    }
+    
+    if (tipoUpper.includes('BOOLEAN') || tipoUpper.includes('BOOL')) {
+      return ejemploValor ? 'TRUE' : 'FALSE'
+    }
+    
+    if (tipoUpper.includes('TIMESTAMP') || tipoUpper.includes('DATETIME')) {
+      return `'${ejemploValor}'::timestamp`
+    }
+    
+    if (tipoUpper.includes('DATE')) {
+      return `'${ejemploValor}'::date`
+    }
+    
+    if (tipoUpper.includes('UUID')) {
+      return `'${ejemploValor}'::uuid`
+    }
+    
+    if (tipoUpper.includes('JSON')) {
+      return `'${JSON.stringify(ejemploValor)}'::jsonb`
+    }
+    
+    return 'NULL'
+  }
+
   // Función para crear mapper normalizado desde columnas y KPIs
   const crearMapperNormalizado = () => {
     console.log('🔄 === CREANDO MAPPER NORMALIZADO ===')
@@ -1204,7 +1296,9 @@ export default function CrearClientePage() {
           tipo: col.tipo,
           descripcion: col.descripcion,
           nullable: true,
-          default: null
+          default: generarDatoSintetico(col.tipo, col.nombre, col.descripcion),
+          ejemplo_valor: generarDatoSintetico(col.tipo, col.nombre, col.descripcion),
+          ejemplo_sql: generarEjemploSQL(col.tipo, col.nombre, col.descripcion)
         })),
         total_columnas: formData.columnasPostgres.length
       },
@@ -1231,6 +1325,9 @@ export default function CrearClientePage() {
             columna_id: col.id,
             columna_nombre: col.nombre,
             tipo_dato: col.tipo,
+            descripcion: col.descripcion,
+            ejemplo_valor: generarDatoSintetico(col.tipo, col.nombre, col.descripcion),
+            ejemplo_sql: generarEjemploSQL(col.tipo, col.nombre, col.descripcion),
             usado_en_kpis: kpisRelacionados.map((kpi: any) => ({
               kpi_id: kpi.id,
               kpi_titulo: kpi.titulo,
@@ -1239,6 +1336,30 @@ export default function CrearClientePage() {
             total_kpis_relacionados: kpisRelacionados.length
           }
         })
+      },
+      example_data: {
+        tabla_ejemplo: formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data',
+        registros_ejemplo: [
+          {
+            id: crypto.randomUUID(),
+            ...formData.columnasPostgres.reduce((acc: any, col: any) => {
+              acc[col.nombre] = generarDatoSintetico(col.tipo, col.nombre, col.descripcion)
+              return acc
+            }, {}),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: crypto.randomUUID(),
+            ...formData.columnasPostgres.reduce((acc: any, col: any) => {
+              acc[col.nombre] = generarDatoSintetico(col.tipo, col.nombre, col.descripcion)
+              return acc
+            }, {}),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ],
+        sql_insert_example: `INSERT INTO ${formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data'} (${formData.columnasPostgres.map((col: any) => col.nombre).join(', ')}) VALUES (${formData.columnasPostgres.map((col: any) => generarEjemploSQL(col.tipo, col.nombre, col.descripcion)).join(', ')});`
       },
       statistics: {
         total_columnas: formData.columnasPostgres.length,
@@ -1440,6 +1561,171 @@ export default function CrearClientePage() {
     
     URL.revokeObjectURL(url)
     setSuccess(`Archivo mapper ${fileName} descargado exitosamente`)
+  }
+
+  // Función para validar URL de webhook
+  const validarWebhookUrl = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url)
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
+
+  // Función para enviar mapper JSON via webhook POST
+  const enviarMapperViaWebhook = async () => {
+    console.log('📤 === ENVIANDO MAPPER JSON VIA WEBHOOK ===')
+    
+    const mapper = crearMapperNormalizado()
+    
+    if (!mapper) {
+      setError('No se puede crear el mapper. Asegúrate de tener columnas y KPIs generados.')
+      return
+    }
+
+    // Obtener webhooks Json configurados
+    const webhooksJson = Object.keys(formData.webhooks).filter(key => 
+      key.includes('EnviarJson') && formData.webhooks[key] && formData.webhooks[key].trim() !== ''
+    )
+
+    if (webhooksJson.length === 0) {
+      setError('No hay webhooks Json configurados. Ve al paso 3 para configurar los webhooks.')
+      return
+    }
+
+    // Validar URLs antes de enviar
+    const webhooksInvalidos = webhooksJson.filter(key => 
+      !validarWebhookUrl(formData.webhooks[key])
+    )
+
+    if (webhooksInvalidos.length > 0) {
+      setError(`URLs de webhook inválidas: ${webhooksInvalidos.join(', ')}. Verifica que las URLs sean válidas.`)
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const resultados = []
+      const errores = []
+      
+      for (const webhookKey of webhooksJson) {
+        const webhookUrl = formData.webhooks[webhookKey].trim()
+        const vertical = webhookKey.includes('Llamadas') ? 'Llamadas' : 
+                        webhookKey.includes('Texto') ? 'Texto/Chat' : 'Automatizaciones'
+        
+        console.log(`📤 Enviando mapper a ${vertical}:`, webhookUrl)
+        
+        try {
+          const payload = {
+            cliente_id: clienteId,
+            mapper_data: mapper,
+            columnas_postgres: formData.columnasPostgres,
+            kpis_data: kpiData,
+            metadata: {
+              vertical: vertical,
+              timestamp: new Date().toISOString(),
+              version: '1.0.0'
+            }
+          }
+
+          console.log(`📦 Payload para ${vertical}:`, JSON.stringify(payload, null, 2))
+
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos timeout
+
+          const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'User-Agent': 'Buffalo-IA-Clean/1.0.0'
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+            mode: 'cors',
+            credentials: 'omit'
+          })
+
+          clearTimeout(timeoutId)
+
+          if (!response.ok) {
+            const errorText = await response.text()
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`)
+          }
+
+          let result
+          try {
+            result = await response.json()
+          } catch (jsonError) {
+            result = { message: 'Respuesta recibida pero no es JSON válido', status: response.status }
+          }
+
+          resultados.push({
+            webhook: webhookKey,
+            vertical: vertical,
+            url: webhookUrl,
+            success: true,
+            response: result
+          })
+
+          console.log(`✅ Mapper enviado exitosamente a ${vertical}`)
+          console.log('📥 Respuesta:', result)
+
+        } catch (webhookError) {
+          console.error(`❌ Error enviando a ${vertical}:`, webhookError)
+          
+          const errorMessage = webhookError instanceof Error ? webhookError.message : 'Error desconocido'
+          errores.push({
+            webhook: webhookKey,
+            vertical: vertical,
+            url: webhookUrl,
+            error: errorMessage
+          })
+
+          // Continuar con otros webhooks aunque uno falle
+          console.log(`⚠️ Continuando con otros webhooks después del error en ${vertical}`)
+        }
+      }
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('📊 RESULTADOS WEBHOOKS')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('✅ Exitosos:', resultados.length)
+      console.log('❌ Errores:', errores.length)
+      
+      if (resultados.length > 0) {
+        console.log('📤 Webhooks exitosos:')
+        resultados.forEach(r => {
+          console.log(`   ✓ ${r.vertical}: ${r.url}`)
+        })
+      }
+      
+      if (errores.length > 0) {
+        console.log('❌ Webhooks con error:')
+        errores.forEach(e => {
+          console.log(`   ✗ ${e.vertical}: ${e.url} - ${e.error}`)
+        })
+      }
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+      // Mostrar resultado final
+      if (resultados.length > 0 && errores.length === 0) {
+        setSuccess(`Mapper JSON enviado exitosamente a ${resultados.length} webhook(s)`)
+      } else if (resultados.length > 0 && errores.length > 0) {
+        setSuccess(`Mapper JSON enviado a ${resultados.length} webhook(s), ${errores.length} fallaron. Revisa la consola para detalles.`)
+      } else {
+        setError(`Error enviando a todos los webhooks. Revisa la consola para detalles.`)
+      }
+      
+    } catch (error) {
+      console.error('❌ Error general enviando mapper via webhook:', error)
+      setError(`Error enviando mapper: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Función para guardar SQL scripts en JSON
@@ -2365,7 +2651,7 @@ export default function CrearClientePage() {
           {currentStep === 2 && <Step2 formData={formData} handleVerticalChange={handleVerticalChange} />}
           {currentStep === 3 && <Step3 formData={formData} handleWebhookChange={handleWebhookChange} getWebhookGroups={getWebhookGroups} />}
           {currentStep === 4 && <Step4 formData={formData} addColumna={addColumna} updateColumna={updateColumna} removeColumna={removeColumna} limpiarColumnas={limpiarColumnas} tiposDatos={tiposDatos} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} generarColumnasConIA={generarColumnasConIA} aiLoading={aiLoading} />}
-          {currentStep === 5 && <Step5 formData={formData} generarKPIs={generarKPIs} kpiLoading={kpiLoading} kpiGenerated={kpiGenerated} kpiData={kpiData} />}
+          {currentStep === 5 && <Step5 formData={formData} generarKPIs={generarKPIs} kpiLoading={kpiLoading} kpiGenerated={kpiGenerated} kpiData={kpiData} enviarMapperViaWebhook={enviarMapperViaWebhook} guardarMapperJSON={guardarMapperJSON} guardarSQLScriptsJSON={guardarSQLScriptsJSON} />}
           {currentStep === 6 && <Step6 formData={formData} kpiData={kpiData} clienteId={clienteId} />}
         </div>
 
