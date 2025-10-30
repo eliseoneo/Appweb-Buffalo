@@ -15,7 +15,9 @@
     "db:sync-structure": "node sync-cloud-to-local-advanced.js --skip-data",
     "db:query-kpis": "node query-crear-kpis.js",
     "db:create-llamadas": "node run-create-llamadas-table.js local",
-    "db:create-llamadas-cloud": "node run-create-llamadas-table.js cloud"
+    "db:create-llamadas-cloud": "node run-create-llamadas-table.js cloud",
+    "db:hash-passwords": "node scripts/hash-user-passwords.js",
+    "db:hash": "node scripts/generate-password-hash.js"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -24,6 +26,7 @@
     "chart.js": "^4.4.0",
     "dotenv": "^16.3.1",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.548.0",
     "next": "14.0.3",
     "pg": "^8.11.3",
     "react": "^18",
