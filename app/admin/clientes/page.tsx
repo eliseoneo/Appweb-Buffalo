@@ -30,8 +30,17 @@ interface Cliente {
   colorPrincipal?: string // Color principal de la empresa
 }
 
+interface Partnership {
+  id: number
+  nombre: string
+  slug: string
+  created_at: string
+  updated_at: string
+}
+
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [partnerships, setPartnerships] = useState<Partnership[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -131,11 +140,29 @@ export default function ClientesPage() {
   ]
 
   useEffect(() => {
-    // Simular carga de datos
-    setTimeout(() => {
-      setClientes(mockClientes)
-      setLoading(false)
-    }, 1000)
+    // Fetch partnerships from database
+    const fetchPartnerships = async () => {
+      try {
+        const res = await fetch('/api/partnerships')
+        const data = await res.json()
+        if (data.success && data.partnerships) {
+          setPartnerships(data.partnerships)
+        }
+      } catch (err) {
+        console.error('Error fetching partnerships:', err)
+      }
+    }
+
+    // Simular carga de datos de clientes (por ahora usa mock, luego puedes conectar con API)
+    const loadData = async () => {
+      await fetchPartnerships()
+      setTimeout(() => {
+        setClientes(mockClientes)
+        setLoading(false)
+      }, 1000)
+    }
+    
+    loadData()
   }, [])
 
   // Cerrar menús al hacer clic fuera
@@ -154,7 +181,7 @@ export default function ClientesPage() {
 
   const stats = {
     directos: clientes.filter(c => c.tipo === 'Directo').length,
-    partnerships: clientes.filter(c => c.tipo === 'Partnership').length,
+    partnerships: partnerships.length, // Total partnerships from database
     activos: clientes.filter(c => c.estado === 'Activo').length,
     inactivos: clientes.filter(c => c.estado === 'Inactivo').length
   }
@@ -177,8 +204,19 @@ export default function ClientesPage() {
     partnershipsAgrupados[key].some(c => c.nombreEmpresa.startsWith('Partnership:'))
   )
   const partnershipsConClientes = Object.keys(partnershipsAgrupados).filter(key => 
-    !partnershipsVacios.includes(key)
+    !partnershipsVacios.includes(key) && partnershipsAgrupados[key].length > 0
   )
+  
+  // Partnerships de la base de datos que no tienen clientes asignados aún
+  const partnershipsVaciosDB = partnerships
+    .filter(p => {
+      // No está en los partnerships con clientes
+      const tieneClientes = partnershipsConClientes.includes(p.nombre)
+      // No es un partnership legacy vacío
+      const esLegacyVacio = partnershipsVacios.some(key => key === p.nombre)
+      return !tieneClientes && !esLegacyVacio
+    })
+    .map(p => p.nombre)
 
   const handleDelete = (cliente: Cliente) => {
     setClienteToDelete(cliente)
@@ -238,30 +276,44 @@ export default function ClientesPage() {
     }
 
     try {
-      // Crear partnership vacío y añadirlo a la lista
+      // Llamar API para crear partnership en base de datos
+      const res = await fetch('/api/partnerships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: partnershipForm.nombrePartnership })
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'No se pudo crear el partnership')
+      }
+
+      // Reflejar en UI agregando una tarjeta representativa
       const nuevoPartnership: Cliente = {
-        id: Date.now(), // ID temporal
-        nombreEmpresa: `Partnership: ${partnershipForm.nombrePartnership}`,
-        usuario: `partnership_${partnershipForm.nombrePartnership.toLowerCase()}`,
+        id: data.partnership.id,
+        nombreEmpresa: `Partnership: ${data.partnership.nombre}`,
+        usuario: `partnership_${data.partnership.slug || partnershipForm.nombrePartnership.toLowerCase()}`,
         tipo: 'Partnership' as const,
         estado: 'Activo' as const,
-        fechaCreacion: new Date().toISOString(),
-        partnership: partnershipForm.nombrePartnership,
+        fechaCreacion: data.partnership.created_at,
+        partnership: data.partnership.nombre,
         colorPrincipal: '#00C896',
         logo: '',
         verticales: [],
         webhooks: []
       }
 
-      // Añadir a la lista local
+      // Refresh partnerships list from database
+      const resPartnerships = await fetch('/api/partnerships')
+      const dataPartnerships = await resPartnerships.json()
+      if (dataPartnerships.success && dataPartnerships.partnerships) {
+        setPartnerships(dataPartnerships.partnerships)
+      }
+      
       setClientes([...clientes, nuevoPartnership])
       setShowPartnershipModal(false)
-      setPartnershipForm({
-        nombrePartnership: ''
-      })
-      
-      // Mostrar mensaje de éxito
-      console.log(`Partnership "${partnershipForm.nombrePartnership}" creado exitosamente`)
+      setPartnershipForm({ nombrePartnership: '' })
+      console.log(`✅ Partnership "${data.partnership.nombre}" creado`) 
     } catch (error) {
       console.error('Error:', error)
       setError('Error al crear el partnership')
@@ -275,7 +327,7 @@ export default function ClientesPage() {
     setShowPartnershipMenu(null)
   }
 
-  const confirmPartnershipDelete = () => {
+  const confirmPartnershipDelete = async () => {
     if (!partnershipToDelete) return
     
     if (partnershipDeleteConfirmation !== partnershipToDelete) {
@@ -284,17 +336,34 @@ export default function ClientesPage() {
     }
 
     try {
-      // Eliminar todos los clientes del partnership
+      // Delete partnership from database
+      const res = await fetch(`/api/partnerships?nombre=${encodeURIComponent(partnershipToDelete)}`, {
+        method: 'DELETE'
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'No se pudo eliminar el partnership')
+      }
+
+      // Eliminar todos los clientes del partnership de la lista local
       const clientesActualizados = clientes.filter(cliente => 
         cliente.partnership !== partnershipToDelete
       )
+      
+      // Refresh partnerships list from database
+      const resPartnerships = await fetch('/api/partnerships')
+      const dataPartnerships = await resPartnerships.json()
+      if (dataPartnerships.success && dataPartnerships.partnerships) {
+        setPartnerships(dataPartnerships.partnerships)
+      }
       
       setClientes(clientesActualizados)
       setShowPartnershipDeleteModal(false)
       setPartnershipToDelete(null)
       setPartnershipDeleteConfirmation('')
       
-      console.log(`Partnership "${partnershipToDelete}" eliminado exitosamente`)
+      console.log(`✅ Partnership "${partnershipToDelete}" eliminado exitosamente`)
     } catch (error) {
       console.error('Error:', error)
       setError('Error al eliminar el partnership')
@@ -478,9 +547,60 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        {/* Partnerships Vacíos */}
+        {/* Partnerships Vacíos (Legacy - de clientes array) */}
         {partnershipsVacios.map((partnershipName) => {
-          const partnership = partnershipsAgrupados[partnershipName].find(c => c.nombreEmpresa.startsWith('Partnership:'))
+          const partnership = partnershipsAgrupados[partnershipName]?.find(c => c.nombreEmpresa.startsWith('Partnership:'))
+          const partnershipDB = partnerships.find(p => p.nombre === partnershipName)
+          return (
+            <div key={partnershipName} className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <UserCheck className="h-5 w-5 mr-2 text-yellow-600" />
+                    Partnership: {partnershipName}
+                    <span className="ml-2 bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">
+                      Vacío
+                    </span>
+                  </h2>
+                  
+                  {/* Menú de 3 puntos */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowPartnershipMenu(showPartnershipMenu === partnershipName ? null : partnershipName)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <MoreHorizontal className="h-5 w-5" />
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {showPartnershipMenu === partnershipName && (
+                      <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px]">
+                        <button
+                          onClick={() => handlePartnershipDelete(partnershipName)}
+                          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Eliminar Partnership</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="text-center py-8 text-gray-500">
+                  <UserCheck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-sm">Este partnership está vacío</p>
+                  <p className="text-xs text-gray-400">Los clientes aparecerán aquí cuando se añadan</p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Partnerships Vacíos desde Base de Datos */}
+        {partnershipsVaciosDB.map((partnershipName) => {
+          const partnershipDB = partnerships.find(p => p.nombre === partnershipName)
           return (
             <div key={partnershipName} className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200">

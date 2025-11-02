@@ -139,10 +139,12 @@ const Step1 = ({ formData, handleInputChange }: { formData: any, handleInputChan
             onChange={(e) => handleInputChange('tipoCliente', e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-buffalo-green focus:border-buffalo-green transition-all duration-200 bg-white text-gray-900"
           >
-            <option value="directo">Cliente Directo</option>
-            <option value="partnership-sergi">Partnership: Sergi</option>
-            <option value="partnership-maria">Partnership: María</option>
-            <option value="partnership-carlos">Partnership: Carlos</option>
+            <option value="Directo">Cliente Directo</option>
+            {partnerships.map((partnership) => (
+              <option key={partnership.id} value={`Partnership: ${partnership.nombre}`}>
+                Partnership: {partnership.nombre}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -854,6 +856,7 @@ export default function CrearClientePage() {
   const [kpiLoading, setKpiLoading] = useState(false)
   const [kpiGenerated, setKpiGenerated] = useState(false)
   const [kpiData, setKpiData] = useState<any>(null)
+  const [partnerships, setPartnerships] = useState<Array<{ id: number; nombre: string; slug: string }>>([])
   
   // Generar UUID del cliente al inicio
   const [clienteId] = useState(() => {
@@ -897,6 +900,22 @@ export default function CrearClientePage() {
     },
     columnasPostgres: [] as any[]
   })
+
+  // Fetch partnerships from database
+  useEffect(() => {
+    const fetchPartnerships = async () => {
+      try {
+        const res = await fetch('/api/partnerships')
+        const data = await res.json()
+        if (data.success && data.partnerships) {
+          setPartnerships(data.partnerships)
+        }
+      } catch (err) {
+        console.error('Error fetching partnerships:', err)
+      }
+    }
+    fetchPartnerships()
+  }, [])
 
   // Log inicial al cargar el componente
   useEffect(() => {
@@ -964,9 +983,10 @@ export default function CrearClientePage() {
   // Opciones de tipo de cliente basadas en los partnerships existentes
   const tiposCliente = [
     { value: 'Directo', label: 'Cliente Directo' },
-    { value: 'Partnership: Sergi', label: 'Partnership: Sergi' },
-    { value: 'Partnership: María', label: 'Partnership: María' },
-    { value: 'Partnership: Carlos', label: 'Partnership: Carlos' }
+    ...partnerships.map(p => ({ 
+      value: `Partnership: ${p.nombre}`, 
+      label: `Partnership: ${p.nombre}` 
+    }))
   ]
 
   // Tipos de datos de PostgreSQL
