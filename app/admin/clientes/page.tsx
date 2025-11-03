@@ -41,6 +41,12 @@ interface Partnership {
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [partnerships, setPartnerships] = useState<Partnership[]>([])
+  const [stats, setStats] = useState({
+    directos: 0,
+    partnerships: 0,
+    activos: 0,
+    inactivos: 0
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -64,83 +70,10 @@ export default function ClientesPage() {
   const [partnershipDeleteConfirmation, setPartnershipDeleteConfirmation] = useState('')
   const [showPartnershipDeleteModal, setShowPartnershipDeleteModal] = useState(false)
 
-  // Datos de prueba
-  const mockClientes: Cliente[] = [
-    {
-      id: 1,
-      nombreEmpresa: 'TechStartup S.L.',
-      usuario: 'techstartup',
-      tipo: 'Directo',
-      estado: 'Activo',
-      fechaCreacion: '15/01/2024',
-      verticales: ['Tecnología', 'SaaS'],
-      webhooks: ['https://webhook.site/techstartup'],
-      colorPrincipal: '#00C896'
-    },
-    {
-      id: 2,
-      nombreEmpresa: 'Empresa Grande S.A.',
-      usuario: 'empresa_grande',
-      tipo: 'Partnership',
-      estado: 'Activo',
-      fechaCreacion: '10/01/2024',
-      verticales: ['Finanzas', 'Consultoría'],
-      webhooks: ['https://webhook.site/empresa-grande'],
-      partnership: 'Sergi',
-      colorPrincipal: '#3B82F6'
-    },
-    {
-      id: 3,
-      nombreEmpresa: 'Startup Innovadora',
-      usuario: 'startup_innovadora',
-      tipo: 'Partnership',
-      estado: 'Inactivo',
-      fechaCreacion: '05/01/2024',
-      verticales: ['Innovación'],
-      webhooks: [],
-      partnership: 'Sergi',
-      colorPrincipal: '#8B5CF6'
-    },
-    {
-      id: 4,
-      nombreEmpresa: 'Consultora ABC',
-      usuario: 'consultora_abc',
-      tipo: 'Partnership',
-      estado: 'Activo',
-      fechaCreacion: '20/01/2024',
-      verticales: ['Consultoría'],
-      webhooks: ['https://webhook.site/consultora-abc'],
-      partnership: 'María',
-      colorPrincipal: '#F59E0B'
-    },
-    {
-      id: 5,
-      nombreEmpresa: 'Digital Solutions Ltd.',
-      usuario: 'digital_solutions',
-      tipo: 'Partnership',
-      estado: 'Activo',
-      fechaCreacion: '25/01/2024',
-      verticales: ['Marketing Digital', 'E-commerce'],
-      webhooks: ['https://webhook.site/digital-solutions'],
-      partnership: 'Carlos',
-      colorPrincipal: '#10B981'
-    },
-    {
-      id: 6,
-      nombreEmpresa: 'Innovation Hub',
-      usuario: 'innovation_hub',
-      tipo: 'Partnership',
-      estado: 'Activo',
-      fechaCreacion: '28/01/2024',
-      verticales: ['Innovación', 'Startups'],
-      webhooks: ['https://webhook.site/innovation-hub'],
-      partnership: 'Carlos',
-      colorPrincipal: '#8B5CF6'
-    }
-  ]
+  // Clientes are now loaded from database via API
 
   useEffect(() => {
-    // Fetch partnerships from database
+    // Fetch partnerships, stats, and clientes from database
     const fetchPartnerships = async () => {
       try {
         const res = await fetch('/api/partnerships')
@@ -153,13 +86,39 @@ export default function ClientesPage() {
       }
     }
 
-    // Simular carga de datos de clientes (por ahora usa mock, luego puedes conectar con API)
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/clientes/stats')
+        const data = await res.json()
+        if (data.success && data.stats) {
+          setStats(data.stats)
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err)
+      }
+    }
+
+    const fetchClientes = async () => {
+      try {
+        const res = await fetch('/api/clientes')
+        const data = await res.json()
+        if (data.success && data.clientes) {
+          setClientes(data.clientes)
+        } else {
+          setClientes([])
+        }
+      } catch (err) {
+        console.error('Error fetching clientes:', err)
+        setError('Error al cargar los clientes')
+        setClientes([])
+      }
+    }
+
+    // Load all data from database
     const loadData = async () => {
-      await fetchPartnerships()
-      setTimeout(() => {
-        setClientes(mockClientes)
-        setLoading(false)
-      }, 1000)
+      setLoading(true)
+      await Promise.all([fetchPartnerships(), fetchStats(), fetchClientes()])
+      setLoading(false)
     }
     
     loadData()
@@ -179,19 +138,17 @@ export default function ClientesPage() {
     }
   }, [showPartnershipMenu])
 
-  const stats = {
-    directos: clientes.filter(c => c.tipo === 'Directo').length,
-    partnerships: partnerships.length, // Total partnerships from database
-    activos: clientes.filter(c => c.estado === 'Activo').length,
-    inactivos: clientes.filter(c => c.estado === 'Inactivo').length
-  }
+  // Stats are now loaded from database via API in useEffect
 
   const clientesDirectos = clientes.filter(c => c.tipo === 'Directo')
   const clientesPartnership = clientes.filter(c => c.tipo === 'Partnership')
   
-  // Agrupar partnerships por nombre
+  // Agrupar partnerships por nombre (from database partnership field)
   const partnershipsAgrupados = clientesPartnership.reduce((acc, cliente) => {
+    // Use partnership name from database relationship
     const partnership = cliente.partnership || 'Sin Partnership'
+    if (!partnership || partnership === 'Sin Partnership') return acc
+    
     if (!acc[partnership]) {
       acc[partnership] = []
     }
@@ -199,22 +156,16 @@ export default function ClientesPage() {
     return acc
   }, {} as Record<string, Cliente[]>)
 
-  // Separar partnerships vacíos (que empiezan con "Partnership:") de los que tienen clientes reales
-  const partnershipsVacios = Object.keys(partnershipsAgrupados).filter(key => 
-    partnershipsAgrupados[key].some(c => c.nombreEmpresa.startsWith('Partnership:'))
-  )
+  // Partnerships con clientes (from database relationships)
   const partnershipsConClientes = Object.keys(partnershipsAgrupados).filter(key => 
-    !partnershipsVacios.includes(key) && partnershipsAgrupados[key].length > 0
+    partnershipsAgrupados[key].length > 0
   )
   
   // Partnerships de la base de datos que no tienen clientes asignados aún
   const partnershipsVaciosDB = partnerships
     .filter(p => {
       // No está en los partnerships con clientes
-      const tieneClientes = partnershipsConClientes.includes(p.nombre)
-      // No es un partnership legacy vacío
-      const esLegacyVacio = partnershipsVacios.some(key => key === p.nombre)
-      return !tieneClientes && !esLegacyVacio
+      return !partnershipsConClientes.includes(p.nombre)
     })
     .map(p => p.nombre)
 
@@ -288,29 +239,21 @@ export default function ClientesPage() {
         throw new Error(data?.message || 'No se pudo crear el partnership')
       }
 
-      // Reflejar en UI agregando una tarjeta representativa
-      const nuevoPartnership: Cliente = {
-        id: data.partnership.id,
-        nombreEmpresa: `Partnership: ${data.partnership.nombre}`,
-        usuario: `partnership_${data.partnership.slug || partnershipForm.nombrePartnership.toLowerCase()}`,
-        tipo: 'Partnership' as const,
-        estado: 'Activo' as const,
-        fechaCreacion: data.partnership.created_at,
-        partnership: data.partnership.nombre,
-        colorPrincipal: '#00C896',
-        logo: '',
-        verticales: [],
-        webhooks: []
-      }
-
-      // Refresh partnerships list from database
-      const resPartnerships = await fetch('/api/partnerships')
+      // Refresh partnerships list and stats from database
+      const [resPartnerships, resStats] = await Promise.all([
+        fetch('/api/partnerships'),
+        fetch('/api/clientes/stats')
+      ])
+      
       const dataPartnerships = await resPartnerships.json()
       if (dataPartnerships.success && dataPartnerships.partnerships) {
         setPartnerships(dataPartnerships.partnerships)
       }
       
-      setClientes([...clientes, nuevoPartnership])
+      const dataStats = await resStats.json()
+      if (dataStats.success && dataStats.stats) {
+        setStats(dataStats.stats)
+      }
       setShowPartnershipModal(false)
       setPartnershipForm({ nombrePartnership: '' })
       console.log(`✅ Partnership "${data.partnership.nombre}" creado`) 
@@ -346,19 +289,27 @@ export default function ClientesPage() {
         throw new Error(data?.message || 'No se pudo eliminar el partnership')
       }
 
-      // Eliminar todos los clientes del partnership de la lista local
-      const clientesActualizados = clientes.filter(cliente => 
-        cliente.partnership !== partnershipToDelete
-      )
+      // Refresh partnerships, stats, and clientes from database
+      const [resPartnerships, resStats, resClientes] = await Promise.all([
+        fetch('/api/partnerships'),
+        fetch('/api/clientes/stats'),
+        fetch('/api/clientes')
+      ])
       
-      // Refresh partnerships list from database
-      const resPartnerships = await fetch('/api/partnerships')
       const dataPartnerships = await resPartnerships.json()
       if (dataPartnerships.success && dataPartnerships.partnerships) {
         setPartnerships(dataPartnerships.partnerships)
       }
       
-      setClientes(clientesActualizados)
+      const dataStats = await resStats.json()
+      if (dataStats.success && dataStats.stats) {
+        setStats(dataStats.stats)
+      }
+      
+      const dataClientes = await resClientes.json()
+      if (dataClientes.success && dataClientes.clientes) {
+        setClientes(dataClientes.clientes)
+      }
       setShowPartnershipDeleteModal(false)
       setPartnershipToDelete(null)
       setPartnershipDeleteConfirmation('')
@@ -546,57 +497,6 @@ export default function ClientesPage() {
             )}
           </div>
         </div>
-
-        {/* Partnerships Vacíos (Legacy - de clientes array) */}
-        {partnershipsVacios.map((partnershipName) => {
-          const partnership = partnershipsAgrupados[partnershipName]?.find(c => c.nombreEmpresa.startsWith('Partnership:'))
-          const partnershipDB = partnerships.find(p => p.nombre === partnershipName)
-          return (
-            <div key={partnershipName} className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <UserCheck className="h-5 w-5 mr-2 text-yellow-600" />
-                    Partnership: {partnershipName}
-                    <span className="ml-2 bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">
-                      Vacío
-                    </span>
-                  </h2>
-                  
-                  {/* Menú de 3 puntos */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowPartnershipMenu(showPartnershipMenu === partnershipName ? null : partnershipName)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <MoreHorizontal className="h-5 w-5" />
-                    </button>
-                    
-                    {/* Dropdown Menu */}
-                    {showPartnershipMenu === partnershipName && (
-                      <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px]">
-                        <button
-                          onClick={() => handlePartnershipDelete(partnershipName)}
-                          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span>Eliminar Partnership</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="text-center py-8 text-gray-500">
-                  <UserCheck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm">Este partnership está vacío</p>
-                  <p className="text-xs text-gray-400">Los clientes aparecerán aquí cuando se añadan</p>
-                </div>
-              </div>
-            </div>
-          )
-        })}
 
         {/* Partnerships Vacíos desde Base de Datos */}
         {partnershipsVaciosDB.map((partnershipName) => {

@@ -65,7 +65,7 @@ const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToSte
 )
 
 // Componente del Paso 1: Información Básica
-const Step1 = ({ formData, handleInputChange }: { formData: any, handleInputChange: (field: string, value: string) => void }) => (
+const Step1 = ({ formData, handleInputChange, partnerships = [] }: { formData: any, handleInputChange: (field: string, value: string) => void, partnerships?: Array<{ id: number; nombre: string; slug: string }> }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
     <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
       <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -2667,7 +2667,7 @@ export default function CrearClientePage() {
 
         {/* Contenido del Paso Actual */}
         <div className="mb-8">
-          {currentStep === 1 && <Step1 formData={formData} handleInputChange={handleInputChange} />}
+          {currentStep === 1 && <Step1 formData={formData} handleInputChange={handleInputChange} partnerships={partnerships} />}
           {currentStep === 2 && <Step2 formData={formData} handleVerticalChange={handleVerticalChange} />}
           {currentStep === 3 && <Step3 formData={formData} handleWebhookChange={handleWebhookChange} getWebhookGroups={getWebhookGroups} />}
           {currentStep === 4 && <Step4 formData={formData} addColumna={addColumna} updateColumna={updateColumna} removeColumna={removeColumna} limpiarColumnas={limpiarColumnas} tiposDatos={tiposDatos} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} generarColumnasConIA={generarColumnasConIA} aiLoading={aiLoading} />}
