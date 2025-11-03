@@ -20,14 +20,15 @@ import {
   Trash2,
   Activity,
   Download,
-  Send
+  Send,
+  Palette
 } from 'lucide-react'
 
 // Componente del indicador de pasos
 const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToStep: (step: number) => void }) => (
   <div className="mb-8">
     <div className="flex items-center justify-between">
-      {[1, 2, 3, 4, 5, 6].map((step) => (
+      {[1, 2, 3, 4, 5, 6, 7].map((step) => (
         <div key={step} className="flex items-center">
           <button
             onClick={() => goToStep(step)}
@@ -45,7 +46,7 @@ const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToSte
               step
             )}
           </button>
-            {step < 6 && (
+            {step < 7 && (
             <div className={`w-8 h-1 mx-2 rounded ${
               step < currentStep ? 'bg-green-500' : 'bg-gray-300'
             }`} />
@@ -55,6 +56,7 @@ const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToSte
     </div>
     <div className="flex justify-between mt-2 text-sm text-gray-600">
       <span>Información Básica</span>
+      <span>Personalización</span>
       <span>Verticales</span>
       <span>Webhooks</span>
       <span>Columnas PostgreSQL</span>
@@ -152,8 +154,107 @@ const Step1 = ({ formData, handleInputChange, partnerships = [] }: { formData: a
   </div>
 )
 
-// Componente del Paso 2: Verticales
-const Step2 = ({ formData, handleVerticalChange }: { formData: any, handleVerticalChange: (vertical: string) => void }) => (
+// Componente del Paso 2: Personalización
+const Step2 = ({ formData, handlePersonalizacionChange, handleColorToggle }: { formData: any, handlePersonalizacionChange: (field: string, value: string) => void, handleColorToggle: (color: string) => void }) => {
+  const availableColors = ['blue', 'black', 'green', 'red', 'yellow', 'purple', 'orange', 'pink']
+  
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Palette className="h-5 w-5 mr-2 text-buffalo-green" />
+          Personalización
+        </h3>
+        <p className="text-sm text-gray-600 mt-1">Configura la personalización visual y de contacto</p>
+      </div>
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Colores */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-semibold text-gray-900 mb-3">
+              Colores
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {availableColors.map((color) => (
+                <label
+                  key={color}
+                  className="flex items-center cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.personalizacion.colores.includes(color)}
+                    onChange={() => handleColorToggle(color)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-12 h-12 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
+                      formData.personalizacion.colores.includes(color)
+                        ? 'border-buffalo-green ring-2 ring-buffalo-green ring-opacity-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  >
+                    {formData.personalizacion.colores.includes(color) && (
+                      <CheckCircle className="h-6 w-6 text-white drop-shadow-md" />
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Seleccionados: {formData.personalizacion.colores.length > 0 ? formData.personalizacion.colores.join(', ') : 'Ninguno'}
+            </p>
+          </div>
+
+          {/* Fuente */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Fuente
+            </label>
+            <input
+              type="text"
+              value={formData.personalizacion.fuente}
+              onChange={(e) => handlePersonalizacionChange('fuente', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-buffalo-green focus:border-buffalo-green transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+              placeholder="Ej: Arial, Roboto, Open Sans"
+            />
+          </div>
+
+          {/* Estilo */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Estilo
+            </label>
+            <input
+              type="text"
+              value={formData.personalizacion.estilo}
+              onChange={(e) => handlePersonalizacionChange('estilo', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-buffalo-green focus:border-buffalo-green transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+              placeholder="Ej: Moderno, Clásico, Minimalista"
+            />
+          </div>
+
+          {/* Contacto */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Contacto
+            </label>
+            <input
+              type="text"
+              value={formData.personalizacion.contacto}
+              onChange={(e) => handlePersonalizacionChange('contacto', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-buffalo-green focus:border-buffalo-green transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+              placeholder="Ej: email@empresa.com, +34 123 456 789"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Componente del Paso 3: Verticales
+const Step3 = ({ formData, handleVerticalChange }: { formData: any, handleVerticalChange: (vertical: string) => void }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
     <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
       <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -220,7 +321,7 @@ const Step2 = ({ formData, handleVerticalChange }: { formData: any, handleVertic
 )
 
 // Componente del Paso 3: Webhooks
-const Step3 = ({ formData, handleWebhookChange, getWebhookGroups }: { formData: any, handleWebhookChange: (webhook: string, value: string) => void, getWebhookGroups: () => any[] }) => (
+const Step4 = ({ formData, handleWebhookChange, getWebhookGroups }: { formData: any, handleWebhookChange: (webhook: string, value: string) => void, getWebhookGroups: () => any[] }) => (
   <div className="space-y-6">
     {getWebhookGroups().map((group, groupIndex) => {
       const IconComponent = group.icon
@@ -268,7 +369,7 @@ const Step3 = ({ formData, handleWebhookChange, getWebhookGroups }: { formData: 
 )
 
 // Componente del Paso 4: Columnas PostgreSQL
-const Step4 = ({ formData, addColumna, updateColumna, removeColumna, limpiarColumnas, tiposDatos, aiPrompt, setAiPrompt, generarColumnasConIA, aiLoading }: { 
+const Step5 = ({ formData, addColumna, updateColumna, removeColumna, limpiarColumnas, tiposDatos, aiPrompt, setAiPrompt, generarColumnasConIA, aiLoading }: { 
   formData: any, 
   addColumna: () => void, 
   updateColumna: (id: string, field: string, value: string) => void,
@@ -442,7 +543,7 @@ const Step4 = ({ formData, addColumna, updateColumna, removeColumna, limpiarColu
         {columnas.length > 0 && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-700">
-              ℹ️ Las columnas se guardan automáticamente cuando se generan con IA. Los JSON se pueden enviar via "Webhook Json".
+              ℹ️ Las columnas se guardan automáticamente cuando se generan con IA. Los JSON se pueden enviar via "Webhook Dashboard".
             </p>
           </div>
         )}
@@ -452,7 +553,7 @@ const Step4 = ({ formData, addColumna, updateColumna, removeColumna, limpiarColu
 }
 
 // Componente del Paso 5: Generar KPIs
-const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, enviarMapperViaWebhook, guardarMapperJSON, guardarSQLScriptsJSON }: { 
+const Step6 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, enviarMapperViaWebhook, guardarMapperJSON, guardarSQLScriptsJSON }: { 
   formData: any, 
   generarKPIs: () => void,
   kpiLoading: boolean,
@@ -536,7 +637,7 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, envia
                   <li>✓ KPIs JSON (datos completos)</li>
                   <li>✓ Mapper Normalizado (relaciones columnas-KPIs con datos sintéticos)</li>
                   <li>✓ SQL Scripts (CREATE TABLE + Stored Procedure)</li>
-                  <li>✓ Los JSON se pueden enviar via "Webhook Json"</li>
+                  <li>✓ Los JSON se pueden enviar via "Webhook Dashboard"</li>
                 </ul>
               </div>
 
@@ -563,7 +664,7 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, envia
                   className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  Enviar via Webhook Json
+                  Enviar via Webhook Dashboard
                 </button>
               </div>
 
@@ -571,13 +672,13 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, envia
               <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
                 <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
                   <Send className="h-4 w-4 mr-2" />
-                  Envío via Webhook Json
+                  Envío via Webhook Dashboard
                 </h4>
                 <p className="text-xs text-green-700 mb-2">
-                  El botón "Enviar via Webhook Json" enviará el mapper JSON a todos los webhooks configurados en el paso 3.
+                  El botón "Enviar via Webhook Dashboard" enviará el mapper JSON a todos los webhooks Dashboard configurados en el paso 4.
                 </p>
                 <ul className="text-xs text-green-600 space-y-1">
-                  <li>• Se envía a todos los webhooks "Webhook Json" configurados</li>
+                  <li>• Se envía a todos los webhooks "Dashboard" configurados</li>
                   <li>• Incluye mapper completo + columnas PostgreSQL + datos KPIs</li>
                   <li>• Método POST con Content-Type: application/json</li>
                   <li>• Respuesta detallada en consola del navegador</li>
@@ -619,7 +720,7 @@ const Step5 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, envia
 }
 
 // Componente del Paso 6: Preview Dashboard
-const Step6 = ({ formData, kpiData, clienteId }: { 
+const Step7 = ({ formData, kpiData, clienteId }: { 
   formData: any,
   kpiData: any,
   clienteId: string
@@ -850,7 +951,7 @@ export default function CrearClientePage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
-  const totalSteps = 6  // ✅ Cambiado de 5 a 6 para incluir preview dashboard
+  const totalSteps = 7  // ✅ Cambiado de 6 a 7 para incluir personalización
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [kpiLoading, setKpiLoading] = useState(false)
@@ -878,6 +979,12 @@ export default function CrearClientePage() {
     usuario: '',
     password: '',
     tipoCliente: 'Directo',
+    personalizacion: {
+      colores: [] as string[],
+      fuente: '',
+      estilo: '',
+      contacto: ''
+    },
     verticales: {
       llamadas: false,
       texto: false,
@@ -889,14 +996,11 @@ export default function CrearClientePage() {
       webhookLlamadasProbar: '',
       webhookLlamadasCampaña: '',
       webhookLlamadasDatabase: '',
-      webhookLlamadasEnviarJson: '',
       // Webhooks de Texto
       webhookTextoDashboard: '',
       webhookTextoDatabase: '',
-      webhookTextoEnviarJson: '',
       // Webhooks de Automatizaciones
-      webhookAutomatizacionesDashboard: '',
-      webhookAutomatizacionesEnviarJson: ''
+      webhookAutomatizacionesDashboard: ''
     },
     columnasPostgres: [] as any[]
   })
@@ -967,8 +1071,8 @@ export default function CrearClientePage() {
     console.log('   ✅ Diseño responsive (mobile, tablet, desktop)')
     console.log('   📍 Ubicación: Líneas ~569-789')
     console.log('')
-    console.log('8️⃣ Webhooks Json:')
-    console.log('   ✅ Agregado campo "Webhook Json" a cada vertical')
+    console.log('8️⃣ Webhooks Dashboard:')
+    console.log('   ✅ Los webhooks Dashboard se utilizan para enviar los datos JSON')
     console.log('   📍 Llamadas, Texto/Chat, Automatizaciones')
     console.log('')
     console.log('9️⃣ SQL Scripts Auto-generados:')
@@ -1027,6 +1131,33 @@ export default function CrearClientePage() {
         [webhook]: value
       }
     }))
+  }
+
+  const handlePersonalizacionChange = (field: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      personalizacion: {
+        ...prev.personalizacion,
+        [field]: value
+      }
+    }))
+  }
+
+  const handleColorToggle = (color: string) => {
+    setFormData((prev: any) => {
+      const currentColors = prev.personalizacion.colores || []
+      const newColors = currentColors.includes(color)
+        ? currentColors.filter((c: string) => c !== color)
+        : [...currentColors, color]
+      
+      return {
+        ...prev,
+        personalizacion: {
+          ...prev.personalizacion,
+          colores: newColors
+        }
+      }
+    })
   }
 
   // Funciones para manejar columnas de PostgreSQL
@@ -1604,18 +1735,18 @@ export default function CrearClientePage() {
       return
     }
 
-    // Obtener webhooks Json configurados
-    const webhooksJson = Object.keys(formData.webhooks).filter(key => 
-      key.includes('EnviarJson') && formData.webhooks[key] && formData.webhooks[key].trim() !== ''
+    // Obtener webhooks Dashboard configurados
+    const webhooksDashboard = Object.keys(formData.webhooks).filter(key => 
+      key.includes('Dashboard') && formData.webhooks[key] && formData.webhooks[key].trim() !== ''
     )
 
-    if (webhooksJson.length === 0) {
-      setError('No hay webhooks Json configurados. Ve al paso 3 para configurar los webhooks.')
+    if (webhooksDashboard.length === 0) {
+      setError('No hay webhooks Dashboard configurados. Ve al paso 4 para configurar los webhooks.')
       return
     }
 
     // Validar URLs antes de enviar
-    const webhooksInvalidos = webhooksJson.filter(key => 
+    const webhooksInvalidos = webhooksDashboard.filter(key => 
       !validarWebhookUrl(formData.webhooks[key])
     )
 
@@ -1631,7 +1762,7 @@ export default function CrearClientePage() {
       const resultados = []
       const errores = []
       
-      for (const webhookKey of webhooksJson) {
+      for (const webhookKey of webhooksDashboard) {
         const webhookUrl = formData.webhooks[webhookKey].trim()
         const vertical = webhookKey.includes('Llamadas') ? 'Llamadas' : 
                         webhookKey.includes('Texto') ? 'Texto/Chat' : 'Automatizaciones'
@@ -2404,13 +2535,13 @@ export default function CrearClientePage() {
         console.log('   - Webhooks configurados:', webhooksConfigurados.length)
         if (webhooksConfigurados.length > 0) {
           webhooksConfigurados.forEach(key => {
-            const isEnviarJson = key.includes('EnviarJson')
-            console.log(`     ${isEnviarJson ? '📤' : '•'} ${key}:`, formData.webhooks[key])
+            const isDashboard = key.includes('Dashboard')
+            console.log(`     ${isDashboard ? '📤' : '•'} ${key}:`, formData.webhooks[key])
           })
           
-          const enviarJsonCount = webhooksConfigurados.filter(k => k.includes('EnviarJson')).length
-          if (enviarJsonCount > 0) {
-            console.log(`   ✅ Webhooks Json configurados: ${enviarJsonCount}`)
+          const dashboardCount = webhooksConfigurados.filter(k => k.includes('Dashboard')).length
+          if (dashboardCount > 0) {
+            console.log(`   ✅ Webhooks Dashboard configurados: ${dashboardCount}`)
           }
         } else {
           console.log('   - No se configuraron webhooks')
@@ -2457,8 +2588,7 @@ export default function CrearClientePage() {
           { key: 'webhookLlamadasDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/llamadas/dashboard' },
           { key: 'webhookLlamadasProbar', label: 'Webhook Probar', placeholder: 'https://api.ejemplo.com/webhook/llamadas/probar' },
           { key: 'webhookLlamadasCampaña', label: 'Webhook Campaña', placeholder: 'https://api.ejemplo.com/webhook/llamadas/campaña' },
-          { key: 'webhookLlamadasDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/llamadas/database' },
-          { key: 'webhookLlamadasEnviarJson', label: 'Webhook Json', placeholder: 'https://api.ejemplo.com/webhook/llamadas/json' }
+          { key: 'webhookLlamadasDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/llamadas/database' }
         ]
       })
     }
@@ -2469,8 +2599,7 @@ export default function CrearClientePage() {
         icon: MessageSquare,
         webhooks: [
           { key: 'webhookTextoDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/texto/dashboard' },
-          { key: 'webhookTextoDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/texto/database' },
-          { key: 'webhookTextoEnviarJson', label: 'Webhook Json', placeholder: 'https://api.ejemplo.com/webhook/texto/json' }
+          { key: 'webhookTextoDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/texto/database' }
         ]
       })
     }
@@ -2480,8 +2609,7 @@ export default function CrearClientePage() {
         title: 'Webhooks de Automatizaciones',
         icon: Bot,
         webhooks: [
-          { key: 'webhookAutomatizacionesDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/dashboard' },
-          { key: 'webhookAutomatizacionesEnviarJson', label: 'Webhook Json', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/json' }
+          { key: 'webhookAutomatizacionesDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/dashboard' }
         ]
       })
     }
@@ -2537,6 +2665,7 @@ export default function CrearClientePage() {
         usuario: formData.usuario,
         password: formData.password,
         tipoCliente: formData.tipoCliente,
+        personalizacion: formData.personalizacion,  // ✅ Nuevo campo de personalización
         verticales: formData.verticales,
         webhooks: formData.webhooks,
         columnasPostgres: formData.columnasPostgres,
@@ -2559,13 +2688,13 @@ export default function CrearClientePage() {
       console.log('   - KPIs formato tabla:', nuevoCliente.kpisGenerados?.kpis_tabla?.length || 0, 'registros listos para PostgreSQL')
       
       const webhooksConfigurados = Object.keys(nuevoCliente.webhooks).filter(k => nuevoCliente.webhooks[k])
-      const webhooksJson = webhooksConfigurados.filter(k => k.includes('EnviarJson'))
+      const webhooksDashboard = webhooksConfigurados.filter(k => k.includes('Dashboard'))
       console.log('   - Webhooks configurados:', webhooksConfigurados.length)
-      console.log('   - Webhooks Json:', webhooksJson.length)
+      console.log('   - Webhooks Dashboard:', webhooksDashboard.length)
       
-      if (webhooksJson.length > 0) {
-        console.log('   📤 Webhooks Json configurados:')
-        webhooksJson.forEach(key => {
+      if (webhooksDashboard.length > 0) {
+        console.log('   📤 Webhooks Dashboard configurados:')
+        webhooksDashboard.forEach(key => {
           console.log(`     • ${key}: ${nuevoCliente.webhooks[key]}`)
         })
       }
@@ -2668,11 +2797,12 @@ export default function CrearClientePage() {
         {/* Contenido del Paso Actual */}
         <div className="mb-8">
           {currentStep === 1 && <Step1 formData={formData} handleInputChange={handleInputChange} partnerships={partnerships} />}
-          {currentStep === 2 && <Step2 formData={formData} handleVerticalChange={handleVerticalChange} />}
-          {currentStep === 3 && <Step3 formData={formData} handleWebhookChange={handleWebhookChange} getWebhookGroups={getWebhookGroups} />}
-          {currentStep === 4 && <Step4 formData={formData} addColumna={addColumna} updateColumna={updateColumna} removeColumna={removeColumna} limpiarColumnas={limpiarColumnas} tiposDatos={tiposDatos} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} generarColumnasConIA={generarColumnasConIA} aiLoading={aiLoading} />}
-          {currentStep === 5 && <Step5 formData={formData} generarKPIs={generarKPIs} kpiLoading={kpiLoading} kpiGenerated={kpiGenerated} kpiData={kpiData} enviarMapperViaWebhook={enviarMapperViaWebhook} guardarMapperJSON={guardarMapperJSON} guardarSQLScriptsJSON={guardarSQLScriptsJSON} />}
-          {currentStep === 6 && <Step6 formData={formData} kpiData={kpiData} clienteId={clienteId} />}
+          {currentStep === 2 && <Step2 formData={formData} handlePersonalizacionChange={handlePersonalizacionChange} handleColorToggle={handleColorToggle} />}
+          {currentStep === 3 && <Step3 formData={formData} handleVerticalChange={handleVerticalChange} />}
+          {currentStep === 4 && <Step4 formData={formData} handleWebhookChange={handleWebhookChange} getWebhookGroups={getWebhookGroups} />}
+          {currentStep === 5 && <Step5 formData={formData} addColumna={addColumna} updateColumna={updateColumna} removeColumna={removeColumna} limpiarColumnas={limpiarColumnas} tiposDatos={tiposDatos} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} generarColumnasConIA={generarColumnasConIA} aiLoading={aiLoading} />}
+          {currentStep === 6 && <Step6 formData={formData} generarKPIs={generarKPIs} kpiLoading={kpiLoading} kpiGenerated={kpiGenerated} kpiData={kpiData} enviarMapperViaWebhook={enviarMapperViaWebhook} guardarMapperJSON={guardarMapperJSON} guardarSQLScriptsJSON={guardarSQLScriptsJSON} />}
+          {currentStep === 7 && <Step7 formData={formData} kpiData={kpiData} clienteId={clienteId} />}
         </div>
 
         {/* Navegación */}

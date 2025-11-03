@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     logo_empresa VARCHAR(255) NULL,
     tipo_cliente VARCHAR(20) CHECK (tipo_cliente IN ('startup', 'empresa', 'freelancer', 'otro')) DEFAULT 'empresa',
     webhook_url VARCHAR(255) NULL,
-    configuracion_personalizada JSONB NULL,
+    personalizacion JSONB NULL,
     activo BOOLEAN DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -127,6 +127,20 @@ CREATE TABLE IF NOT EXISTS metricas (
     valor DECIMAL(15,2) NOT NULL,
     fecha_metrica TIMESTAMP NOT NULL,
     metadata JSONB NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
+    FOREIGN KEY (aplicacion_id) REFERENCES aplicaciones(id) ON DELETE CASCADE
+);
+
+-- Tabla de KPIs
+CREATE TABLE IF NOT EXISTS kpis (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER NULL,
+    aplicacion_id INTEGER NULL,
+    json_kpis JSONB NULL,
+    json_mapper JSONB NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
@@ -202,6 +216,7 @@ CREATE INDEX IF NOT EXISTS idx_usuarios_activo ON usuarios(activo);
 CREATE INDEX IF NOT EXISTS idx_clientes_usuario ON clientes(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_clientes_activo ON clientes(activo);
 CREATE INDEX IF NOT EXISTS idx_clientes_tipo ON clientes(tipo_cliente);
+CREATE INDEX IF NOT EXISTS idx_clientes_personalizacion ON clientes USING GIN (personalizacion);
 
 -- Índices para aplicaciones
 CREATE INDEX IF NOT EXISTS idx_aplicaciones_cliente ON aplicaciones(cliente_id);
@@ -213,6 +228,12 @@ CREATE INDEX IF NOT EXISTS idx_metricas_cliente ON metricas(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_metricas_aplicacion ON metricas(aplicacion_id);
 CREATE INDEX IF NOT EXISTS idx_metricas_fecha ON metricas(fecha_metrica);
 CREATE INDEX IF NOT EXISTS idx_metricas_tipo ON metricas(tipo_metrica);
+
+-- Índices para KPIs
+CREATE INDEX IF NOT EXISTS idx_kpis_cliente ON kpis(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_kpis_aplicacion ON kpis(aplicacion_id);
+CREATE INDEX IF NOT EXISTS idx_kpis_json_kpis ON kpis USING GIN (json_kpis);
+CREATE INDEX IF NOT EXISTS idx_kpis_json_mapper ON kpis USING GIN (json_mapper);
 
 -- Índices para logs
 CREATE INDEX IF NOT EXISTS idx_logs_usuario ON logs_auditoria(usuario_id);
