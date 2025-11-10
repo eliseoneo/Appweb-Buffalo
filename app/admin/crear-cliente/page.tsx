@@ -127,9 +127,14 @@ const Step1 = ({ formData, handleInputChange, partnerships = [] }: { formData: a
             value={formData.password}
             onChange={(e) => handleInputChange('password', e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-buffalo-green focus:border-buffalo-green transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
-            placeholder="Contraseña segura"
+            placeholder="Contraseña segura (mínimo 6 caracteres)"
+            minLength={6}
             required
           />
+          <p className="mt-2 text-xs text-gray-500 flex items-center">
+            <span className="mr-1">🔒</span>
+            La contraseña se cifrará de forma segura usando bcrypt antes de guardarse en la base de datos
+          </p>
         </div>
 
         <div className="lg:col-span-2">
@@ -979,6 +984,7 @@ export default function CrearClientePage() {
     usuario: '',
     password: '',
     tipoCliente: 'Directo',
+    partnership_id: null as number | null,
     personalizacion: {
       colores: [] as string[],
       fuente: '',
@@ -1107,10 +1113,33 @@ export default function CrearClientePage() {
   ]
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [field]: value
-    }))
+    setFormData((prev: any) => {
+      const newData = {
+        ...prev,
+        [field]: value
+      }
+      
+      // If tipoCliente is being changed and it's a Partnership, extract partnership_id
+      if (field === 'tipoCliente' && value.startsWith('Partnership:')) {
+        const partnershipName = value.replace('Partnership: ', '').trim()
+        // Find partnership in the partnerships array
+        const partnership = partnerships && partnerships.length > 0 
+          ? partnerships.find(p => p.nombre === partnershipName)
+          : null
+        if (partnership) {
+          newData.partnership_id = partnership.id
+          console.log(`✅ Partnership seleccionado: ${partnershipName} (ID: ${partnership.id})`)
+        } else {
+          newData.partnership_id = null
+          console.warn(`⚠️ Partnership no encontrado: ${partnershipName} (partnerships cargados: ${partnerships?.length || 0})`)
+        }
+      } else if (field === 'tipoCliente' && value === 'Directo') {
+        // Clear partnership_id for Directo
+        newData.partnership_id = null
+      }
+      
+      return newData
+    })
   }
 
   const handleVerticalChange = (vertical: string) => {
@@ -2633,9 +2662,19 @@ export default function CrearClientePage() {
       if (!formData.nombreEmpresa || !formData.usuario || !formData.password) {
         console.error('❌ Validación fallida: Campos obligatorios incompletos')
         setError('Por favor completa todos los campos obligatorios')
+        setLoading(false)
         return
       }
       console.log('✅ Campos obligatorios: OK')
+
+      // Validar longitud mínima de contraseña
+      if (formData.password.length < 6) {
+        console.error('❌ Validación fallida: Contraseña muy corta')
+        setError('La contraseña debe tener al menos 6 caracteres')
+        setLoading(false)
+        return
+      }
+      console.log('✅ Validación de contraseña: OK (longitud mínima cumplida)')
 
       // Validar que al menos una vertical esté seleccionada
       const verticalesSeleccionadas = Object.values(formData.verticales).some(v => v)
@@ -2658,6 +2697,12 @@ export default function CrearClientePage() {
       console.log('   Valor:', clienteId)
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
       
+      // Create mapper JSON before sending to API
+      let mapperJSON = null
+      if (formData.columnasPostgres && formData.columnasPostgres.length > 0 && kpiData && kpiData.kpis_tabla) {
+        mapperJSON = crearMapperNormalizado()
+      }
+      
       const nuevoCliente = {
         id: clienteId,  // ✅ CAMBIO: Antes usaba Date.now(), ahora usa UUID
         nombreEmpresa: formData.nombreEmpresa,
@@ -2665,11 +2710,13 @@ export default function CrearClientePage() {
         usuario: formData.usuario,
         password: formData.password,
         tipoCliente: formData.tipoCliente,
+        partnership_id: formData.partnership_id || null,  // ✅ Partnership ID from step 1
         personalizacion: formData.personalizacion,  // ✅ Nuevo campo de personalización
         verticales: formData.verticales,
         webhooks: formData.webhooks,
         columnasPostgres: formData.columnasPostgres,
         kpisGenerados: kpiData,  // ✅ Incluye: { cliente_id, timestamp, total_kpis, kpis: [...] }
+        mapperJSON: mapperJSON,  // ✅ Mapper JSON content for kpis table
         estado: 'Activo',
         fechaCreacion: new Date().toISOString()
       }
@@ -2716,42 +2763,42 @@ export default function CrearClientePage() {
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
       }
 
-      // Aquí iría la llamada a la API para crear el cliente
-      console.log('⚠️ NOTA: No hay endpoint configurado aún para crear cliente')
-      console.log('⚠️ Endpoint sugerido: POST /api/clientes/create')
-      console.log('📤 Payload que se enviaría:', nuevoCliente)
-      
-      // TODO: Descomentar cuando se implemente el endpoint
-      /*
-      const response = await fetch('/api/clientes/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(nuevoCliente)
-      })
+              // Llamar a la API para crear el cliente
+        console.log('📤 Enviando request a /api/clientes/create')
+        console.log('📤 Payload:', nuevoCliente)
+        
+        const response = await fetch('/api/clientes/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(nuevoCliente)
+        })
 
-      console.log('📡 Crear Cliente - Response status:', response.status, response.statusText)
+        console.log('📡 Crear Cliente - Response status:', response.status, response.statusText)
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ Crear Cliente - Error response:', errorText)
-        throw new Error(`Error del servidor: ${response.status} - ${errorText}`)
-      }
+        if (!response.ok) {
+          const errorData = await response.json().catch(async () => ({ message: await response.text() }))
+          console.error('❌ Crear Cliente - Error response:', errorData)
+          throw new Error(errorData.message || `Error del servidor: ${response.status}`)
+        }
 
-      const data = await response.json()
-      console.log('📥 Crear Cliente - Data recibida:', data)
-      */
-      
-      setSuccess('Cliente creado exitosamente')
-      console.log('✅ Cliente creado exitosamente (simulado)')
-      console.log('🎉 === FIN handleSubmit (EXITOSO) ===')
-      
-      // Redirigir después de 2 segundos
-      setTimeout(() => {
-        console.log('🔄 Redirigiendo a /admin/clientes...')
-        router.push('/admin/clientes')
-      }, 2000)
+        const data = await response.json()
+        console.log('📥 Crear Cliente - Data recibida:', data)
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Error al crear el cliente')
+        }
+        
+        setSuccess('Cliente creado exitosamente')
+        console.log('✅ Cliente creado exitosamente')
+        console.log('🎉 === FIN handleSubmit (EXITOSO) ===')
+        
+        // Redirigir después de 2 segundos
+        setTimeout(() => {
+          console.log('🔄 Redirigiendo a /admin/clientes...')
+          router.push('/admin/clientes')
+        }, 2000)
 
     } catch (error: any) {
       console.error('❌ Crear Cliente - Error capturado:', error)
