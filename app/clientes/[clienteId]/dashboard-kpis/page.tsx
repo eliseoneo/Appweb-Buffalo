@@ -56,6 +56,8 @@ export default function DashboardKPIsPage() {
   const params = useParams()
   const clienteId = params.clienteId as string
   const [cliente, setCliente] = useState<ClienteConfig | null>(null)
+  const [personalizacion, setPersonalizacion] = useState<any>(null)
+  const [designVariant, setDesignVariant] = useState<'classic' | 'modern' | 'compact' | 'grid' | 'minimal'>('classic')
   const [kpis, setKpis] = useState<KPIData[]>([])
   const [kpiDefinitions, setKpiDefinitions] = useState<KPIDefinition[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -63,10 +65,75 @@ export default function DashboardKPIsPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
   useEffect(() => {
-    const clienteData = getClientConfig(clienteId)
-    if (clienteData) {
-      setCliente(clienteData)
+    // Fetch cliente data from API to get personalizacion
+    const fetchCliente = async () => {
+      try {
+        console.log('🔍 Fetching cliente with ID:', clienteId)
+        const response = await fetch(`/api/clientes/${clienteId}`)
+        const data = await response.json()
+        
+        console.log('📦 API Response:', { status: response.status, success: data.success, hasCliente: !!data.cliente })
+        
+        if (response.ok && data.success && data.cliente) {
+          console.log('✅ Cliente encontrado en API:', data.cliente.id, data.cliente.nombreEmpresa)
+          // Set personalizacion from database
+          setPersonalizacion(data.cliente.personalizacion || {})
+          // Set design variant from personalizacion
+          const variant = data.cliente.personalizacion?.designVariant || 'classic'
+          setDesignVariant(variant)
+          console.log('🎨 Design variant loaded:', variant)
+          console.log('🎨 Personalizacion:', data.cliente.personalizacion)
+          
+          // Always create cliente object from API data (prefer API over static config)
+          const clienteFromAPI: ClienteConfig = {
+            id: String(data.cliente.id),
+            nombre: data.cliente.nombreEmpresa,
+            color: data.cliente.colorPrincipal || '#00C896',
+            logo: data.cliente.logo || '',
+            modulos: [],
+            grupos: {}
+          }
+          
+          // Try to get static config for additional data (modulos, grupos)
+          const clienteData = getClientConfig(clienteId)
+          if (clienteData) {
+            // Merge static config with API data
+            setCliente({
+              ...clienteFromAPI,
+              modulos: clienteData.modulos || [],
+              grupos: clienteData.grupos || {}
+            })
+          } else {
+            // Use API data only
+            setCliente(clienteFromAPI)
+          }
+        } else {
+          console.error('❌ Cliente no encontrado en API:', data.message || 'Unknown error')
+          // Try fallback to static config
+          const clienteData = getClientConfig(clienteId)
+          if (clienteData) {
+            console.log('✅ Usando configuración estática como fallback')
+            setCliente(clienteData)
+          } else {
+            console.error('❌ Cliente no encontrado ni en API ni en config estática')
+            setError(`Cliente con ID "${clienteId}" no encontrado en la base de datos`)
+          }
+        }
+      } catch (err) {
+        console.error('❌ Error fetching cliente:', err)
+        // Fallback to static config
+        const clienteData = getClientConfig(clienteId)
+        if (clienteData) {
+          setCliente(clienteData)
+        } else {
+          setError(`Error al cargar el cliente: ${err instanceof Error ? err.message : 'Error desconocido'}`)
+        }
+      } finally {
+        setIsLoading(false)
+      }
     }
+    
+    fetchCliente()
     
     // Cargar KPIs
     loadKPIs()
@@ -310,15 +377,59 @@ export default function DashboardKPIsPage() {
     await loadKPIs()
   }
 
+  // Get colors, font, and style from personalizacion (for use in render functions)
+  const userColors = personalizacion?.color || ['#00C896', '#0066CC', '#FF6B6B']
+  const primaryColor = userColors[0] || '#00C896'
+  const secondaryColor = userColors[1] || '#0066CC'
+  const accentColor = userColors[2] || '#FF6B6B'
+
   // Render individual KPI card
   const renderIndividualKPI = (kpi: KPIData, index: number) => {
     const icons = [Phone, Clock, DollarSign, Users, TrendingUp, Heart]
-    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500']
     const Icon = icons[index % icons.length]
-    const color = colors[index % colors.length]
+    
+    // Use user colors cyclically
+    const colorIndex = index % userColors.length
+    const cardColor = userColors[colorIndex] || primaryColor
+    
+    // Apply design variant styling
+    const getBorderClass = () => {
+      if (designVariant === 'modern' || designVariant === 'grid') return 'border-2'
+      if (designVariant === 'minimal') return 'border-0'
+      return 'border'
+    }
+    
+    const getShadowClass = () => {
+      if (designVariant === 'modern' || designVariant === 'grid') return 'shadow-lg'
+      if (designVariant === 'minimal') return 'shadow-sm'
+      return 'shadow-sm'
+    }
+    
+    const getBorderColor = () => {
+      if (designVariant === 'modern' || designVariant === 'grid') return `${cardColor}40`
+      if (designVariant === 'compact') return `${cardColor}80`
+      return '#e5e7eb'
+    }
+    
+    const getPadding = () => {
+      if (designVariant === 'compact') return 'p-4'
+      if (designVariant === 'minimal') return 'p-5'
+      return 'p-6'
+    }
+    
+    const getRounded = () => {
+      if (designVariant === 'minimal') return 'rounded-lg'
+      return 'rounded-xl'
+    }
 
     return (
-      <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+      <div 
+        key={index} 
+        className={`bg-white ${getRounded()} ${getShadowClass()} ${getBorderClass()} ${getPadding()} hover:shadow-xl transition-shadow`}
+        style={{ 
+          borderColor: getBorderColor()
+        }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 mb-1">{kpi.titulo}</p>
@@ -327,7 +438,10 @@ export default function DashboardKPIsPage() {
               <p className="text-sm text-gray-500 mt-1">{kpi.unidad}</p>
             )}
           </div>
-          <div className={`h-14 w-14 ${color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+          <div 
+            className="h-14 w-14 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: cardColor }}
+          >
             <Icon className="h-7 w-7 text-white" />
           </div>
         </div>
@@ -362,8 +476,37 @@ export default function DashboardKPIsPage() {
         )
       }
 
+      // Apply design variant styling
+      const getBorderClass = () => {
+        if (designVariant === 'modern' || designVariant === 'grid') return 'border-2'
+        if (designVariant === 'minimal') return 'border-0'
+        return 'border'
+      }
+      
+      const getShadowClass = () => {
+        if (designVariant === 'modern' || designVariant === 'grid') return 'shadow-lg'
+        if (designVariant === 'minimal') return 'shadow-sm'
+        return 'shadow-sm'
+      }
+      
+      const getBorderColor = () => {
+        if (designVariant === 'modern' || designVariant === 'grid') return `${primaryColor}40`
+        if (designVariant === 'compact') return `${primaryColor}60`
+        return '#e5e7eb'
+      }
+      
+      const getRounded = () => {
+        if (designVariant === 'minimal') return 'rounded-lg'
+        return 'rounded-xl'
+      }
+
       return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div 
+          className={`bg-white ${getRounded()} ${getShadowClass()} ${getBorderClass()} p-6`}
+          style={{ 
+            borderColor: getBorderColor()
+          }}
+        >
           <div className="flex items-start justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{kpi.titulo}</h3>
@@ -394,9 +537,9 @@ export default function DashboardKPIsPage() {
               <Line 
                 type="monotone" 
                 dataKey="llamadas" 
-                stroke="#3b82f6" 
+                stroke={primaryColor}
                 strokeWidth={2}
-                dot={{ fill: '#3b82f6', r: 4 }}
+                dot={{ fill: primaryColor, r: 4 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>
@@ -736,14 +879,42 @@ export default function DashboardKPIsPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-buffalo-green mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando KPIs...</p>
+          <p className="text-gray-600">Cargando dashboard...</p>
         </div>
       </div>
     )
   }
 
+  // Don't block rendering - always try to show dashboard
+  // The API fetch might succeed even if static config fails
+  if (error && !cliente && !personalizacion) {
+    // Only show error if we've tried loading and there's no data at all
+    console.warn('⚠️ No cliente data available, but attempting to render dashboard anyway')
+  }
+
+  // Get font and style from personalizacion (colors already extracted above)
+  const fuente = personalizacion?.fuente || 'Inter'
+  const estilo = personalizacion?.estilo || 'Profesional'
+
+  // Get font family mapping
+  const fontFamilyMap: Record<string, string> = {
+    'Inter': 'Inter, sans-serif',
+    'Roboto': 'Roboto, sans-serif',
+    'Open Sans': '"Open Sans", sans-serif',
+    'Lato': 'Lato, sans-serif',
+    'Montserrat': 'Montserrat, sans-serif',
+    'Poppins': 'Poppins, sans-serif',
+    'Raleway': 'Raleway, sans-serif',
+    'Ubuntu': 'Ubuntu, sans-serif'
+  }
+  const fontFamily = fontFamilyMap[fuente] || 'Inter, sans-serif'
+
+  // Separate KPIs and charts
+  const individualKPIs = kpis.filter(kpi => kpi.tipo === 'individual')
+  const chartKPIs = kpis.filter(kpi => kpi.tipo !== 'individual')
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily }}>
       {/* Header */}
       <ClientHeader 
         cliente={cliente} 
@@ -759,12 +930,24 @@ export default function DashboardKPIsPage() {
             <h2 className="text-xl font-semibold text-gray-900">Métricas de Llamadas</h2>
             <p className="text-sm text-gray-500 mt-1">
               Última actualización: {lastUpdated.toLocaleTimeString('es-ES')}
+              {personalizacion && (
+                <span className="ml-2">
+                  • Fuente: {fuente} • Estilo: {estilo} • Diseño: {
+                    designVariant === 'classic' ? 'Clásico' :
+                    designVariant === 'modern' ? 'Moderno' :
+                    designVariant === 'compact' ? 'Compacto' :
+                    designVariant === 'grid' ? 'Grid' :
+                    designVariant === 'minimal' ? 'Minimalista' : 'Clásico'
+                  }
+                </span>
+              )}
             </p>
           </div>
           <button
             onClick={refreshData}
             disabled={isLoading}
-            className="flex items-center px-4 py-2 bg-buffalo-green text-white rounded-lg hover:bg-buffalo-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center px-4 py-2 rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
+            style={{ backgroundColor: primaryColor }}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Actualizar
@@ -784,31 +967,122 @@ export default function DashboardKPIsPage() {
           </div>
         )}
 
-        {/* Individual KPIs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {(() => {
-            const individualKPIs = kpis.filter(kpi => kpi.tipo === 'individual')
-            console.log('📊 Individual KPIs to render:', individualKPIs.length)
-            return individualKPIs.map((kpi, index) => (
-              <div key={`individual-${kpi.titulo}-${index}`}>
-                {renderIndividualKPI(kpi, index)}
-              </div>
-            ))
-          })()}
-        </div>
+        {/* Render based on design variant */}
+        {designVariant === 'classic' && (
+          <>
+            {/* Classic: KPIs first, then charts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {individualKPIs.map((kpi, index) => (
+                <div key={`individual-${kpi.titulo}-${index}`}>
+                  {renderIndividualKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {chartKPIs.map((kpi, index) => (
+                <div key={`chart-${kpi.titulo}-${index}`}>
+                  {renderKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {(() => {
-            const chartKPIs = kpis.filter(kpi => kpi.tipo !== 'individual')
-            console.log('📈 Chart KPIs to render:', chartKPIs.length, chartKPIs.map(k => k.tipo))
-            return chartKPIs.map((kpi, index) => (
-              <div key={`chart-${kpi.titulo}-${index}`}>
-                {renderKPI(kpi, index)}
-              </div>
-            ))
-          })()}
-        </div>
+        {designVariant === 'modern' && (
+          <>
+            {/* Modern: Charts first, then KPIs */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {chartKPIs.map((kpi, index) => (
+                <div key={`chart-${kpi.titulo}-${index}`}>
+                  {renderKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {individualKPIs.map((kpi, index) => (
+                <div key={`individual-${kpi.titulo}-${index}`}>
+                  {renderIndividualKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {designVariant === 'compact' && (
+          <>
+            {/* Compact: Smaller cards, tighter spacing */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+              {individualKPIs.slice(0, 4).map((kpi, index) => (
+                <div key={`individual-${kpi.titulo}-${index}`}>
+                  {renderIndividualKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+              {chartKPIs.slice(0, 2).map((kpi, index) => (
+                <div key={`chart-${kpi.titulo}-${index}`}>
+                  {renderKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {designVariant === 'grid' && (
+          <>
+            {/* Grid: Equal-sized cards in grid layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-6 sm:mb-8">
+              {[...individualKPIs.slice(0, 3), ...chartKPIs.slice(0, 3)].map((kpi, index) => {
+                const isChart = index >= 3
+                return (
+                  <div key={`${isChart ? 'chart' : 'individual'}-${kpi.titulo}-${index}`}>
+                    {isChart ? renderKPI(kpi, index) : renderIndividualKPI(kpi, index)}
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {designVariant === 'minimal' && (
+          <>
+            {/* Minimal: Clean, less borders, subtle shadows */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {individualKPIs.map((kpi, index) => (
+                <div key={`individual-${kpi.titulo}-${index}`}>
+                  {renderIndividualKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {chartKPIs.map((kpi, index) => (
+                <div key={`chart-${kpi.titulo}-${index}`}>
+                  {renderKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Fallback: If no design variant matches, use classic */}
+        {!['classic', 'modern', 'compact', 'grid', 'minimal'].includes(designVariant) && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {individualKPIs.map((kpi, index) => (
+                <div key={`individual-${kpi.titulo}-${index}`}>
+                  {renderIndividualKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {chartKPIs.map((kpi, index) => (
+                <div key={`chart-${kpi.titulo}-${index}`}>
+                  {renderKPI(kpi, index)}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Empty State */}
         {kpis.length === 0 && (

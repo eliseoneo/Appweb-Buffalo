@@ -23,7 +23,14 @@ export function getGruposNavegacion(clienteId: string) {
   if (!cliente || !cliente.grupos) {
     // Fallback: crear un grupo único con todos los módulos
     const modulos = getModulosActivos(clienteId);
-    return { "Navegación": modulos };
+    // Mapear a la forma esperada por el layout: { name, href, icon }
+    return {
+      "Navegación": modulos.map(modulo => ({
+        name: getSpecialModuleName(modulo.nombre),
+        href: `/clientes/${clienteId}${modulo.ruta}`,
+        icon: modulo.icono
+      }))
+    };
   }
   
   const grupos: Record<string, any[]> = {};

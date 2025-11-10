@@ -9,23 +9,63 @@ export async function GET(
 ) {
   try {
     const { id } = params
+    console.log('🔍 Fetching cliente with ID:', id, 'Type:', typeof id)
+    
     const pool = getPool()
-    const result = await pool.query(
-      `SELECT 
-        c.id,
-        c.nombre_empresa,
-        c.logo_empresa,
-        c.activo,
-        c.personalizacion,
-        u.username,
-        p.id as partnership_id,
-        p.nombre as partnership_nombre
-       FROM clientes c
-       JOIN usuarios u ON c.usuario_id = u.id
-       LEFT JOIN partnerships p ON c.partnership_id = p.id
-       WHERE c.id = $1`,
-      [id]
-    )
+    
+    // Try to query by ID
+    // Since clientes.id is SERIAL (INTEGER), we should query as integer
+    let result
+    
+    // Check if id is a valid number
+    const idAsNumber = parseInt(String(id), 10)
+    const isValidNumber = !isNaN(idAsNumber) && String(idAsNumber) === String(id)
+    
+    if (isValidNumber) {
+      console.log('🔍 Querying as INTEGER:', idAsNumber)
+      result = await pool.query(
+        `SELECT 
+          c.id,
+          c.nombre_empresa,
+          c.logo_empresa,
+          c.activo,
+          c.personalizacion,
+          u.username,
+          p.id as partnership_id,
+          p.nombre as partnership_nombre
+         FROM clientes c
+         JOIN usuarios u ON c.usuario_id = u.id
+         LEFT JOIN partnerships p ON c.partnership_id = p.id
+         WHERE c.id = $1`,
+        [idAsNumber]
+      )
+    } else {
+      // If not a valid number, try as text (for UUIDs if they exist)
+      console.log('🔍 Querying as TEXT:', String(id))
+      result = await pool.query(
+        `SELECT 
+          c.id,
+          c.nombre_empresa,
+          c.logo_empresa,
+          c.activo,
+          c.personalizacion,
+          u.username,
+          p.id as partnership_id,
+          p.nombre as partnership_nombre
+         FROM clientes c
+         JOIN usuarios u ON c.usuario_id = u.id
+         LEFT JOIN partnerships p ON c.partnership_id = p.id
+         WHERE c.id::text = $1`,
+        [String(id)]
+      )
+    }
+    
+    console.log('📊 Query result:', result.rows.length, 'rows found')
+    if (result.rows.length > 0) {
+      console.log('✅ Cliente encontrado:', result.rows[0].id, result.rows[0].nombre_empresa)
+    } else {
+      console.log('❌ No se encontró cliente con ID:', id)
+    }
 
     if (result.rows.length === 0) {
       return NextResponse.json(

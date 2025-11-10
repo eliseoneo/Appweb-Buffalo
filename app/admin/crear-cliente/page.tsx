@@ -713,12 +713,39 @@ const Step6 = ({ formData, generarKPIs, kpiLoading, kpiGenerated, kpiData, envia
   )
 }
 
+// Design variant types
+type DesignVariant = 'classic' | 'modern' | 'compact' | 'grid' | 'minimal'
+
 // Componente del Paso 6: Preview Dashboard
-const Step7 = ({ formData, kpiData, clienteId }: { 
+const Step7 = ({ formData, kpiData, clienteId, onDesignChange }: { 
   formData: any,
   kpiData: any,
-  clienteId: string
+  clienteId: string,
+  onDesignChange?: (variant: DesignVariant) => void
 }) => {
+  const designVariants: DesignVariant[] = ['classic', 'modern', 'compact', 'grid', 'minimal']
+  const designVariantNames: Record<DesignVariant, string> = {
+    classic: 'Clásico',
+    modern: 'Moderno',
+    compact: 'Compacto',
+    grid: 'Grid',
+    minimal: 'Minimalista'
+  }
+  
+  const [designVariant, setDesignVariant] = useState<DesignVariant>(
+    (formData.personalizacion?.designVariant as DesignVariant) || 'classic'
+  )
+  
+  const handleDesignChange = () => {
+    const currentIndex = designVariants.indexOf(designVariant)
+    const nextIndex = (currentIndex + 1) % designVariants.length
+    const nextVariant = designVariants[nextIndex]
+    setDesignVariant(nextVariant)
+    if (onDesignChange) {
+      onDesignChange(nextVariant)
+    }
+  }
+  
   if (!kpiData || !kpiData.kpis) {
     console.warn('⚠️ Preview Dashboard: No hay KPIs para mostrar')
     return (
@@ -735,27 +762,35 @@ const Step7 = ({ formData, kpiData, clienteId }: {
   const kpisBarras = kpiData.kpis.filter((kpi: any) => kpi.tipo_grafico.includes('barras'))
   const kpisDonut = kpiData.kpis.filter((kpi: any) => kpi.tipo_grafico === 'donut' || kpi.tipo_grafico === 'pie')
 
+  // Get colors from personalizacion
+  const userColors = formData.personalizacion?.coloresPrincipales || ['#00C896', '#0066CC', '#FF6B6B']
+  const primaryColor = userColors[0] || '#00C896'
+  const secondaryColor = userColors[1] || '#0066CC'
+  const accentColor = userColors[2] || '#FF6B6B'
+  
+  // Get fuente and estilo from personalizacion
+  const fuente = formData.personalizacion?.fuente || 'Roboto, Arial, sans-serif'
+  const estilo = formData.personalizacion?.estilo || 'Moderno'
+
+  // Apply font family
+  const fontFamily = fuente.split(',').map((f: string) => f.trim()).join(', ')
+
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('📊 PREVIEW DASHBOARD - Paso 6')
+  console.log('📊 PREVIEW DASHBOARD - Paso 7')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log('🏢 Empresa:', formData.nombreEmpresa)
   console.log('🔑 Cliente ID:', clienteId)
-  console.log('📊 KPIs por tipo:')
-  console.log('   - Individuales:', kpisIndividuales.length, '(máx 3 mostrados)')
-  console.log('   - Línea:', kpisLinea.length, '(máx 2 mostrados)')
-  console.log('   - Barras:', kpisBarras.length, '(máx 2 mostrados)')
-  console.log('   - Donut/Pie:', kpisDonut.length, '(máx 2 mostrados)')
-  console.log('🎨 Diseño: n8n-dashboard style')
-  console.log('📱 Responsive: ✅')
-  console.log('   - Mobile: 1 columna')
-  console.log('   - Tablet: 2 columnas')
-  console.log('   - Desktop: 3-4 columnas')
+  console.log('🎨 Colores:', userColors)
+  console.log('📝 Fuente:', fuente)
+  console.log('🎭 Estilo:', estilo)
+  console.log('🔄 Variante de Diseño:', designVariant)
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-  const colors = ['blue', 'green', 'purple', 'orange', 'red']
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 -mx-4 sm:-mx-6 lg:-mx-8 -my-8 p-4 sm:p-6 lg:p-8">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 -mx-4 sm:-mx-6 lg:-mx-8 -my-8 p-4 sm:p-6 lg:p-8"
+      style={{ fontFamily: fontFamily }}
+    >
       {/* Header - Estilo n8n-dashboard - RESPONSIVE */}
       <div className="bg-white border-b border-gray-200 shadow-sm rounded-xl mb-6 lg:mb-8">
         <div className="px-4 sm:px-6 py-4 sm:py-6">
@@ -766,12 +801,43 @@ const Step7 = ({ formData, kpiData, clienteId }: {
                 {formData.nombreEmpresa || 'Cliente'} - Dashboard Preview
               </h1>
               <p className="text-xs sm:text-sm text-gray-600 mt-1">Vista previa del dashboard con KPIs generados</p>
+              <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                <span>Fuente: {fuente}</span>
+                <span>•</span>
+                <span>Estilo: {estilo}</span>
+              </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="px-3 sm:px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+              <button
+                onClick={handleDesignChange}
+                className="px-4 py-2 bg-white border-2 rounded-lg hover:shadow-md transition-all duration-200 flex items-center gap-2"
+                style={{ 
+                  borderColor: primaryColor,
+                  color: primaryColor
+                }}
+              >
+                <Palette className="h-4 w-4" />
+                <span className="text-sm font-medium">Cambiar Diseño</span>
+                <span className="text-xs ml-2 opacity-75">({designVariantNames[designVariant]})</span>
+              </button>
+              <div 
+                className="px-3 sm:px-4 py-2 rounded-lg"
+                style={{ 
+                  backgroundColor: `${primaryColor}15`,
+                  border: `1px solid ${primaryColor}40`
+                }}
+              >
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs sm:text-sm font-medium text-green-700">Preview</span>
+                  <div 
+                    className="w-2 h-2 rounded-full animate-pulse"
+                    style={{ backgroundColor: primaryColor }}
+                  ></div>
+                  <span 
+                    className="text-xs sm:text-sm font-medium"
+                    style={{ color: primaryColor }}
+                  >
+                    Preview
+                  </span>
                 </div>
               </div>
             </div>
@@ -795,110 +861,231 @@ const Step7 = ({ formData, kpiData, clienteId }: {
         </div>
       </div>
 
-      {/* KPI Cards Row - RESPONSIVE: 1 col mobile, 2 col tablet, 3 col desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {kpisIndividuales.slice(0, 3).map((kpi: any, index: number) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">{kpi.titulo}</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                  {index === 0 ? '1,234' : index === 1 ? '145 seg' : '89%'}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">{kpi.descripcion?.substring(0, 50)}...</p>
-                <div className="flex items-center gap-1 mt-2 text-xs sm:text-sm font-medium text-green-600">
-                  <span>↑</span>
-                  <span>+{12 + index * 3}% vs anterior</span>
+      {/* Design Variant: Classic, Modern, Compact, Grid, or Minimal */}
+      {designVariant === 'classic' && (
+        <>
+          {/* Classic Design: KPI Cards First */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {kpisIndividuales.slice(0, 3).map((kpi: any, index: number) => {
+              const cardColor = userColors[index % userColors.length]
+              return (
+                <div 
+                  key={index} 
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow duration-200"
+                  style={{ borderTopColor: cardColor, borderTopWidth: '4px' }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">{kpi.titulo}</p>
+                      <p 
+                        className="text-2xl sm:text-3xl font-bold mb-2"
+                        style={{ color: cardColor }}
+                      >
+                        {index === 0 ? '1,234' : index === 1 ? '145 seg' : '89%'}
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">{kpi.descripcion?.substring(0, 50)}...</p>
+                      <div 
+                        className="flex items-center gap-1 mt-2 text-xs sm:text-sm font-medium"
+                        style={{ color: cardColor }}
+                      >
+                        <span>↑</span>
+                        <span>+{12 + index * 3}% vs anterior</span>
+                      </div>
+                    </div>
+                    <div 
+                      className="p-2 sm:p-3 rounded-lg flex-shrink-0"
+                      style={{ 
+                        backgroundColor: `${cardColor}15`,
+                        color: cardColor
+                      }}
+                    >
+                      <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className={`p-2 sm:p-3 rounded-lg flex-shrink-0 ${
-                index === 0 ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                index === 1 ? 'bg-green-50 text-green-600 border-green-100' :
-                'bg-purple-50 text-purple-600 border-purple-100'
-              }`}>
-                <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            </div>
+              )
+            })}
           </div>
-        ))}
-      </div>
 
-      {/* Charts Row 1: Evolution Chart - Full Width - RESPONSIVE */}
-      {kpisLinea.length > 0 && (
-        <div className="mb-6 sm:mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpisLinea[0].titulo}</h3>
-                <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpisLinea[0].descripcion?.substring(0, 80)}...</p>
-              </div>
-              <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium self-start sm:self-center">Línea</span>
-            </div>
-            <div className="h-48 sm:h-56 md:h-64 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center border border-blue-200">
-              <div className="text-center px-4">
-                <Activity className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 mx-auto mb-3" />
-                <p className="text-blue-700 text-sm sm:text-base font-semibold">Gráfico de Evolución</p>
-                <p className="text-xs sm:text-sm text-blue-600 mt-2 break-words">Columnas: {kpisLinea[0].inputs?.join(', ')}</p>
-                <p className="text-xs text-blue-500 mt-1">Datos simulados por día</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Charts Row 2: Donut Charts - RESPONSIVE */}
-      {kpisDonut.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {kpisDonut.slice(0, 2).map((kpi: any, index: number) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
-                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
+          {/* Charts Row 1: Evolution Chart - Full Width - RESPONSIVE */}
+          {kpisLinea.length > 0 && (
+            <div className="mb-6 sm:mb-8">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpisLinea[0].titulo}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpisLinea[0].descripcion?.substring(0, 80)}...</p>
+                  </div>
+                  <span 
+                    className="text-xs px-3 py-1 rounded-full font-medium self-start sm:self-center"
+                    style={{ 
+                      backgroundColor: `${primaryColor}15`,
+                      color: primaryColor
+                    }}
+                  >
+                    Línea
+                  </span>
                 </div>
-                <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium self-start sm:self-center">Donut</span>
-              </div>
-              <div className="h-48 sm:h-56 md:h-64 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg flex items-center justify-center border border-purple-200">
-                <div className="text-center px-4">
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-8 border-purple-400 border-t-purple-200 mx-auto mb-3"></div>
-                  <p className="text-purple-700 text-sm sm:text-base font-semibold">Distribución</p>
-                  <p className="text-xs sm:text-sm text-purple-600 mt-2 break-words">Columnas: {kpi.inputs?.join(', ')}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Charts Row 3: Bar Charts - RESPONSIVE */}
-      {kpisBarras.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {kpisBarras.slice(0, 2).map((kpi: any, index: number) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
-                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
-                </div>
-                <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium self-start sm:self-center">
-                  {kpi.tipo_grafico.includes('vertical') ? 'Barras V' : 'Barras H'}
-                </span>
-              </div>
-              <div className="h-48 sm:h-56 md:h-64 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg flex items-center justify-center border border-green-200">
-                <div className="text-center px-4">
-                  <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 text-green-500 mx-auto mb-3" />
-                  <p className="text-green-700 text-sm sm:text-base font-semibold">Gráfico de Comparación</p>
-                  <p className="text-xs sm:text-sm text-green-600 mt-2 break-words">Columnas: {kpi.inputs?.join(', ')}</p>
-                  <p className="text-xs text-green-500 mt-1">Rendimiento por categoría</p>
+                <div 
+                  className="h-48 sm:h-56 md:h-64 rounded-lg flex items-center justify-center border"
+                  style={{ 
+                    background: `linear-gradient(to bottom right, ${primaryColor}15, ${secondaryColor}15)`,
+                    borderColor: `${primaryColor}40`
+                  }}
+                >
+                  <div className="text-center px-4">
+                    <Activity 
+                      className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3" 
+                      style={{ color: primaryColor }}
+                    />
+                    <p 
+                      className="text-sm sm:text-base font-semibold"
+                      style={{ color: primaryColor }}
+                    >
+                      Gráfico de Evolución
+                    </p>
+                    <p 
+                      className="text-xs sm:text-sm mt-2 break-words"
+                      style={{ color: primaryColor }}
+                    >
+                      Columnas: {kpisLinea[0].inputs?.join(', ')}
+                    </p>
+                    <p 
+                      className="text-xs mt-1"
+                      style={{ color: primaryColor }}
+                    >
+                      Datos simulados por día
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* Summary Banner - RESPONSIVE */}
-      <div className="bg-gradient-to-r from-buffalo-green to-green-600 rounded-xl shadow-lg p-4 sm:p-6 text-white mb-4 sm:mb-6">
+          {/* Charts Row 2: Donut Charts - RESPONSIVE */}
+          {kpisDonut.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {kpisDonut.slice(0, 2).map((kpi: any, index: number) => {
+                const donutColor = userColors[(index + 1) % userColors.length]
+                return (
+                  <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
+                      </div>
+                      <span 
+                        className="text-xs px-3 py-1 rounded-full font-medium self-start sm:self-center"
+                        style={{ 
+                          backgroundColor: `${donutColor}15`,
+                          color: donutColor
+                        }}
+                      >
+                        Donut
+                      </span>
+                    </div>
+                    <div 
+                      className="h-48 sm:h-56 md:h-64 rounded-lg flex items-center justify-center border"
+                      style={{ 
+                        background: `linear-gradient(to bottom right, ${donutColor}15, ${donutColor}25)`,
+                        borderColor: `${donutColor}40`
+                      }}
+                    >
+                      <div className="text-center px-4">
+                        <div 
+                          className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-8 mx-auto mb-3"
+                          style={{ 
+                            borderColor: donutColor,
+                            borderTopColor: `${donutColor}40`
+                          }}
+                        ></div>
+                        <p 
+                          className="text-sm sm:text-base font-semibold"
+                          style={{ color: donutColor }}
+                        >
+                          Distribución
+                        </p>
+                        <p 
+                          className="text-xs sm:text-sm mt-2 break-words"
+                          style={{ color: donutColor }}
+                        >
+                          Columnas: {kpi.inputs?.join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Charts Row 3: Bar Charts - RESPONSIVE */}
+          {kpisBarras.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {kpisBarras.slice(0, 2).map((kpi: any, index: number) => {
+                const barColor = userColors[(index + 2) % userColors.length]
+                return (
+                  <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
+                      </div>
+                      <span 
+                        className="text-xs px-3 py-1 rounded-full font-medium self-start sm:self-center"
+                        style={{ 
+                          backgroundColor: `${barColor}15`,
+                          color: barColor
+                        }}
+                      >
+                        {kpi.tipo_grafico.includes('vertical') ? 'Barras V' : 'Barras H'}
+                      </span>
+                    </div>
+                    <div 
+                      className="h-48 sm:h-56 md:h-64 rounded-lg flex items-center justify-center border"
+                      style={{ 
+                        background: `linear-gradient(to bottom right, ${barColor}15, ${barColor}25)`,
+                        borderColor: `${barColor}40`
+                      }}
+                    >
+                      <div className="text-center px-4">
+                        <BarChart3 
+                          className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3" 
+                          style={{ color: barColor }}
+                        />
+                        <p 
+                          className="text-sm sm:text-base font-semibold"
+                          style={{ color: barColor }}
+                        >
+                          Gráfico de Comparación
+                        </p>
+                        <p 
+                          className="text-xs sm:text-sm mt-2 break-words"
+                          style={{ color: barColor }}
+                        >
+                          Columnas: {kpi.inputs?.join(', ')}
+                        </p>
+                        <p 
+                          className="text-xs mt-1"
+                          style={{ color: barColor }}
+                        >
+                          Rendimiento por categoría
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Summary Banner - RESPONSIVE */}
+          <div 
+            className="rounded-xl shadow-lg p-4 sm:p-6 text-white mb-4 sm:mb-6"
+            style={{ 
+              background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+            }}
+          >
         <h4 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">📊 Resumen del Dashboard</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4">
@@ -921,14 +1108,407 @@ const Step7 = ({ formData, kpiData, clienteId }: {
           </div>
         </div>
       </div>
+        </>
+      )}
+      
+      {designVariant === 'modern' && (
+        <>
+          {/* Modern Design: Charts First, Different Order */}
+          {/* Charts Row 1: Evolution Chart - Full Width - RESPONSIVE */}
+          {kpisLinea.length > 0 && (
+            <div className="mb-6 sm:mb-8">
+              <div className="bg-white rounded-xl shadow-lg border-2 p-4 sm:p-6" style={{ borderColor: primaryColor }}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpisLinea[0].titulo}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpisLinea[0].descripcion?.substring(0, 80)}...</p>
+                  </div>
+                  <span 
+                    className="text-xs px-3 py-1 rounded-full font-medium self-start sm:self-center"
+                    style={{ 
+                      backgroundColor: primaryColor,
+                      color: 'white'
+                    }}
+                  >
+                    Línea
+                  </span>
+                </div>
+                <div 
+                  className="h-48 sm:h-56 md:h-64 rounded-lg flex items-center justify-center border-2"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`,
+                    borderColor: primaryColor
+                  }}
+                >
+                  <div className="text-center px-4">
+                    <Activity 
+                      className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3" 
+                      style={{ color: primaryColor }}
+                    />
+                    <p 
+                      className="text-sm sm:text-base font-semibold"
+                      style={{ color: primaryColor }}
+                    >
+                      Gráfico de Evolución
+                    </p>
+                    <p 
+                      className="text-xs sm:text-sm mt-2 break-words"
+                      style={{ color: primaryColor }}
+                    >
+                      Columnas: {kpisLinea[0].inputs?.join(', ')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* KPI Cards Row - RESPONSIVE: 1 col mobile, 2 col tablet, 3 col desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {kpisIndividuales.slice(0, 3).map((kpi: any, index: number) => {
+              const cardColor = userColors[index % userColors.length]
+              return (
+                <div 
+                  key={index} 
+                  className="bg-white rounded-xl shadow-lg border-2 p-4 sm:p-6 hover:shadow-xl transition-all duration-200"
+                  style={{ borderColor: cardColor }}
+                >
+                  <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-3">
+                      <div 
+                        className="p-2 rounded-lg"
+                        style={{ 
+                          backgroundColor: `${cardColor}15`,
+                          color: cardColor
+                        }}
+                      >
+                        <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </div>
+                      <div 
+                        className="text-xs font-medium px-2 py-1 rounded"
+                        style={{ 
+                          backgroundColor: `${cardColor}15`,
+                          color: cardColor
+                        }}
+                      >
+                        KPI {index + 1}
+                      </div>
+                    </div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 mb-2 truncate">{kpi.titulo}</p>
+                    <p 
+                      className="text-3xl sm:text-4xl font-bold mb-2"
+                      style={{ color: cardColor }}
+                    >
+                      {index === 0 ? '1,234' : index === 1 ? '145 seg' : '89%'}
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 mb-3">{kpi.descripcion?.substring(0, 50)}...</p>
+                    <div 
+                      className="flex items-center gap-1 text-xs sm:text-sm font-medium"
+                      style={{ color: cardColor }}
+                    >
+                      <span>↑</span>
+                      <span>+{12 + index * 3}% vs anterior</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Charts Row 2 & 3: Combined Grid - RESPONSIVE */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {/* Donut Charts */}
+            {kpisDonut.slice(0, 1).map((kpi: any, index: number) => {
+              const donutColor = userColors[1] || secondaryColor
+              return (
+                <div key={`donut-${index}`} className="bg-white rounded-xl shadow-lg border-2 p-4 sm:p-6" style={{ borderColor: donutColor }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
+                    </div>
+                    <span 
+                      className="text-xs px-3 py-1 rounded-full font-medium self-start sm:self-center"
+                      style={{ 
+                        backgroundColor: donutColor,
+                        color: 'white'
+                      }}
+                    >
+                      Donut
+                    </span>
+                  </div>
+                  <div 
+                    className="h-48 sm:h-56 md:h-64 rounded-lg flex items-center justify-center border-2"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${donutColor}20, ${donutColor}30)`,
+                      borderColor: donutColor
+                    }}
+                  >
+                    <div className="text-center px-4">
+                      <div 
+                        className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-8 mx-auto mb-3"
+                        style={{ 
+                          borderColor: donutColor,
+                          borderTopColor: `${donutColor}40`
+                        }}
+                      ></div>
+                      <p 
+                        className="text-sm sm:text-base font-semibold"
+                        style={{ color: donutColor }}
+                      >
+                        Distribución
+                      </p>
+                      <p 
+                        className="text-xs sm:text-sm mt-2 break-words"
+                        style={{ color: donutColor }}
+                      >
+                        Columnas: {kpi.inputs?.join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Bar Charts */}
+            {kpisBarras.slice(0, 1).map((kpi: any, index: number) => {
+              const barColor = userColors[2] || accentColor
+              return (
+                <div key={`bar-${index}`} className="bg-white rounded-xl shadow-lg border-2 p-4 sm:p-6" style={{ borderColor: barColor }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{kpi.descripcion?.substring(0, 60)}...</p>
+                    </div>
+                    <span 
+                      className="text-xs px-3 py-1 rounded-full font-medium self-start sm:self-center"
+                      style={{ 
+                        backgroundColor: barColor,
+                        color: 'white'
+                      }}
+                    >
+                      {kpi.tipo_grafico.includes('vertical') ? 'Barras V' : 'Barras H'}
+                    </span>
+                  </div>
+                  <div 
+                    className="h-48 sm:h-56 md:h-64 rounded-lg flex items-center justify-center border-2"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${barColor}20, ${barColor}30)`,
+                      borderColor: barColor
+                    }}
+                  >
+                    <div className="text-center px-4">
+                      <BarChart3 
+                        className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3" 
+                        style={{ color: barColor }}
+                      />
+                      <p 
+                        className="text-sm sm:text-base font-semibold"
+                        style={{ color: barColor }}
+                      >
+                        Gráfico de Comparación
+                      </p>
+                      <p 
+                        className="text-xs sm:text-sm mt-2 break-words"
+                        style={{ color: barColor }}
+                      >
+                        Columnas: {kpi.inputs?.join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Summary Banner - RESPONSIVE */}
+          <div 
+            className="rounded-xl shadow-lg p-4 sm:p-6 text-white mb-4 sm:mb-6"
+            style={{ 
+              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${accentColor})`
+            }}
+          >
+            <h4 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">📊 Resumen del Dashboard</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+                <p className="text-white/90 text-xs sm:text-sm mb-1">Total KPIs</p>
+                <p className="text-2xl sm:text-3xl font-bold">{kpiData.total_kpis || kpiData.kpis?.length || 0}</p>
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+                <p className="text-white/90 text-xs sm:text-sm mb-1">Columnas DB</p>
+                <p className="text-2xl sm:text-3xl font-bold">{formData.columnasPostgres?.length || 0}</p>
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+                <p className="text-white/90 text-xs sm:text-sm mb-1">Gráficos</p>
+                <p className="text-2xl sm:text-3xl font-bold">
+                  {kpiData.kpis?.filter((k: any) => k.tipo_grafico !== 'individual').length || 0}
+                </p>
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 sm:p-4">
+                <p className="text-white/90 text-xs sm:text-sm mb-1">Estado</p>
+                <p className="text-2xl sm:text-3xl font-bold">✓ Listo</p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {designVariant === 'compact' && (
+        <>
+          {/* Compact Design: Smaller cards, tighter spacing */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            {kpisIndividuales.slice(0, 4).map((kpi: any, index: number) => {
+              const cardColor = userColors[index % userColors.length]
+              return (
+                <div 
+                  key={index} 
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-shadow"
+                  style={{ borderLeftColor: cardColor, borderLeftWidth: '3px' }}
+                >
+                  <p className="text-xs font-medium text-gray-600 mb-1 truncate">{kpi.titulo}</p>
+                  <p 
+                    className="text-xl sm:text-2xl font-bold mb-1"
+                    style={{ color: cardColor }}
+                  >
+                    {index === 0 ? '1,234' : index === 1 ? '145' : index === 2 ? '89%' : '12.5k'}
+                  </p>
+                  <p className="text-xs text-gray-500 line-clamp-1">{kpi.descripcion?.substring(0, 30)}...</p>
+                </div>
+              )
+            })}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            {kpisLinea.slice(0, 1).map((kpi: any) => (
+              <div key="line" className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">{kpi.titulo}</h3>
+                <div className="h-32 sm:h-40 rounded flex items-center justify-center" style={{ backgroundColor: `${primaryColor}10` }}>
+                  <Activity className="h-8 w-8" style={{ color: primaryColor }} />
+                </div>
+              </div>
+            ))}
+            {kpisDonut.slice(0, 1).map((kpi: any) => (
+              <div key="donut" className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">{kpi.titulo}</h3>
+                <div className="h-32 sm:h-40 rounded flex items-center justify-center" style={{ backgroundColor: `${secondaryColor}10` }}>
+                  <div className="w-16 h-16 rounded-full border-4" style={{ borderColor: secondaryColor }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {designVariant === 'grid' && (
+        <>
+          {/* Grid Design: Equal-sized cards in grid layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-6 sm:mb-8">
+            {[...kpisIndividuales.slice(0, 3), ...kpisLinea.slice(0, 1), ...kpisDonut.slice(0, 1), ...kpisBarras.slice(0, 1)].map((kpi: any, index: number) => {
+              const cardColor = userColors[index % userColors.length]
+              const isChart = index >= 3
+              return (
+                <div 
+                  key={index} 
+                  className="bg-white rounded-xl shadow-md border-2 p-4 sm:p-6 hover:shadow-lg transition-all"
+                  style={{ borderColor: `${cardColor}60` }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{kpi.titulo}</h3>
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${cardColor}20` }}
+                    >
+                      {isChart ? <BarChart3 className="w-4 h-4" style={{ color: cardColor }} /> : 
+                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cardColor }}></div>}
+                    </div>
+                  </div>
+                  {!isChart ? (
+                    <>
+                      <p className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: cardColor }}>
+                        {index === 0 ? '1,234' : index === 1 ? '145' : '89%'}
+                      </p>
+                      <p className="text-xs text-gray-500 line-clamp-2">{kpi.descripcion?.substring(0, 40)}...</p>
+                    </>
+                  ) : (
+                    <div className="h-32 sm:h-40 rounded flex items-center justify-center" style={{ backgroundColor: `${cardColor}10` }}>
+                      <BarChart3 className="h-10 w-10" style={{ color: cardColor }} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {designVariant === 'minimal' && (
+        <>
+          {/* Minimal Design: Clean, less borders, subtle shadows */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {kpisIndividuales.slice(0, 3).map((kpi: any, index: number) => {
+              const cardColor = userColors[index % userColors.length]
+              return (
+                <div 
+                  key={index} 
+                  className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow transition-shadow"
+                >
+                  <p className="text-xs sm:text-sm font-medium text-gray-500 mb-2">{kpi.titulo}</p>
+                  <p 
+                    className="text-3xl sm:text-4xl font-light mb-3"
+                    style={{ color: cardColor }}
+                  >
+                    {index === 0 ? '1,234' : index === 1 ? '145' : '89%'}
+                  </p>
+                  <div className="h-px bg-gray-100 mb-3"></div>
+                  <p className="text-xs text-gray-400 line-clamp-2">{kpi.descripcion?.substring(0, 50)}...</p>
+                </div>
+              )
+            })}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {kpisLinea.slice(0, 1).map((kpi: any) => (
+              <div key="line" className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+                <h3 className="text-base font-medium text-gray-900 mb-4">{kpi.titulo}</h3>
+                <div className="h-48 sm:h-56 rounded flex items-center justify-center bg-gray-50">
+                  <Activity className="h-12 w-12 text-gray-300" />
+                </div>
+              </div>
+            ))}
+            {kpisDonut.slice(0, 1).map((kpi: any) => (
+              <div key="donut" className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+                <h3 className="text-base font-medium text-gray-900 mb-4">{kpi.titulo}</h3>
+                <div className="h-48 sm:h-56 rounded flex items-center justify-center bg-gray-50">
+                  <div className="w-24 h-24 rounded-full border-4 border-gray-300"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Info Note - RESPONSIVE */}
-      <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 sm:p-6">
-        <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-2">💡 Información del Preview</h3>
-        <p className="text-sm sm:text-base text-blue-800 mb-3">
+      <div 
+        className="border-l-4 rounded-lg p-4 sm:p-6"
+        style={{ 
+          backgroundColor: `${primaryColor}10`,
+          borderColor: primaryColor
+        }}
+      >
+        <h3 
+          className="text-base sm:text-lg font-semibold mb-2"
+          style={{ color: primaryColor }}
+        >
+          💡 Información del Preview
+        </h3>
+        <p 
+          className="text-sm sm:text-base mb-3"
+          style={{ color: primaryColor }}
+        >
           Este es un preview simulado del dashboard. El dashboard real se generará al crear el cliente y se poblará con datos reales desde PostgreSQL.
         </p>
-        <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
+        <ul 
+          className="text-xs sm:text-sm space-y-1"
+          style={{ color: primaryColor }}
+        >
           <li>✓ Los gráficos mostrarán datos en tiempo real</li>
           <li>✓ Los KPIs se actualizarán automáticamente</li>
           <li>✓ Filtros por fecha, campaña e idioma disponibles</li>
@@ -1175,6 +1755,16 @@ export default function CrearClientePage() {
         }
       }
     })
+  }
+
+  const handleDesignVariantChange = (variant: DesignVariant) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      personalizacion: {
+        ...prev.personalizacion,
+        designVariant: variant
+      }
+    }))
   }
 
   // Funciones para manejar columnas de PostgreSQL
@@ -2693,11 +3283,13 @@ export default function CrearClientePage() {
       
       // Transform personalizacion: convert coloresPrincipales to color array with hex values
       // Save hexadecimal color values in the 'color' array
+      // Include designVariant if it exists in formData
       const personalizacionForDB = {
         ...formData.personalizacion,
         color: formData.personalizacion?.coloresPrincipales 
           ? formData.personalizacion.coloresPrincipales // Save hex values directly
-          : ['#00C896', '#0066CC', '#FF6B6B'] // Default hex values if not set
+          : ['#00C896', '#0066CC', '#FF6B6B'], // Default hex values if not set
+        designVariant: formData.personalizacion?.designVariant || 'classic' // Save design variant
       }
       // Remove coloresPrincipales from the object (we only save 'color' array with hex values)
       delete personalizacionForDB.coloresPrincipales
@@ -2705,6 +3297,7 @@ export default function CrearClientePage() {
       console.log('🎨 Personalización transformada para DB:')
       console.log('   - Antes (coloresPrincipales):', formData.personalizacion?.coloresPrincipales)
       console.log('   - Después (color con valores hexadecimales):', personalizacionForDB.color)
+      console.log('   - Variante de Diseño:', personalizacionForDB.designVariant)
 
       const nuevoCliente = {
         id: clienteId,  // ✅ CAMBIO: Antes usaba Date.now(), ahora usa UUID
@@ -2852,7 +3445,7 @@ export default function CrearClientePage() {
           {currentStep === 4 && <Step4 formData={formData} handleWebhookChange={handleWebhookChange} getWebhookGroups={getWebhookGroups} />}
           {currentStep === 5 && <Step5 formData={formData} addColumna={addColumna} updateColumna={updateColumna} removeColumna={removeColumna} limpiarColumnas={limpiarColumnas} tiposDatos={tiposDatos} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} generarColumnasConIA={generarColumnasConIA} aiLoading={aiLoading} />}
           {currentStep === 6 && <Step6 formData={formData} generarKPIs={generarKPIs} kpiLoading={kpiLoading} kpiGenerated={kpiGenerated} kpiData={kpiData} enviarMapperViaWebhook={enviarMapperViaWebhook} guardarMapperJSON={guardarMapperJSON} guardarSQLScriptsJSON={guardarSQLScriptsJSON} />}
-          {currentStep === 7 && <Step7 formData={formData} kpiData={kpiData} clienteId={clienteId} />}
+          {currentStep === 7 && <Step7 formData={formData} kpiData={kpiData} clienteId={clienteId} onDesignChange={handleDesignVariantChange} />}
         </div>
 
         {/* Navegación */}

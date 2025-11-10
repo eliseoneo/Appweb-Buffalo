@@ -97,7 +97,11 @@ export async function POST(request: NextRequest) {
 
     // Add cliente_id if user is a client
     if (user.tipo_usuario === 'cliente' && user.cliente_id) {
-      userResponse.cliente_id = user.cliente_id
+      // Ensure cliente_id is converted to string for URL routing
+      userResponse.cliente_id = String(user.cliente_id)
+      console.log('✅ Cliente ID encontrado:', userResponse.cliente_id, 'Type:', typeof userResponse.cliente_id)
+    } else {
+      console.log('⚠️ No cliente_id found for user:', username, 'tipo_usuario:', user.tipo_usuario)
     }
 
     const response = NextResponse.json({

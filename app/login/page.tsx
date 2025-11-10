@@ -35,13 +35,21 @@ export default function LoginPage() {
 
       if (data.success) {
         console.log('✅ Login exitoso, redirigiendo...')
+        console.log('👤 User data:', data.user)
+        console.log('🆔 Cliente ID:', data.user.cliente_id, 'Type:', typeof data.user.cliente_id)
         
         // Redirigir inmediatamente sin esperar
         if (data.user.tipo_usuario === 'admin') {
           window.location.href = '/admin'
         } else {
           // Redirigir al panel del cliente específico
-          const clienteId = data.user.cliente_id || 'techcorp'
+          const clienteId = data.user.cliente_id
+          if (!clienteId) {
+            console.error('❌ No cliente_id found in user data')
+            setError('Error: No se encontró el ID del cliente. Contacta al administrador.')
+            return
+          }
+          console.log('🔗 Redirigiendo a:', `/clientes/${clienteId}/dashboard`)
           window.location.href = `/clientes/${clienteId}/dashboard`
         }
       } else {
