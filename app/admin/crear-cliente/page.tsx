@@ -23,6 +23,7 @@ import {
   Send,
   Palette
 } from 'lucide-react'
+import ColorPicker from './components/ColorPicker'
 
 // Componente del indicador de pasos
 const StepIndicator = ({ currentStep, goToStep }: { currentStep: number, goToStep: (step: number) => void }) => (
@@ -160,8 +161,9 @@ const Step1 = ({ formData, handleInputChange, partnerships = [] }: { formData: a
 )
 
 // Componente del Paso 2: Personalización
-const Step2 = ({ formData, handlePersonalizacionChange, handleColorToggle }: { formData: any, handlePersonalizacionChange: (field: string, value: string) => void, handleColorToggle: (color: string) => void }) => {
-  const availableColors = ['blue', 'black', 'green', 'red', 'yellow', 'purple', 'orange', 'pink']
+const Step2 = ({ formData, handlePersonalizacionChange, handleColorChange }: { formData: any, handlePersonalizacionChange: (field: string, value: string) => void, handleColorChange: (index: number, color: string) => void }) => {
+  // Initialize coloresPrincipales if not exists
+  const coloresPrincipales = formData.personalizacion?.coloresPrincipales || ['#00C896', '#0066CC', '#FF6B6B']
   
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -174,40 +176,27 @@ const Step2 = ({ formData, handlePersonalizacionChange, handleColorToggle }: { f
       </div>
       <div className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Colores */}
+          {/* Colores Principales */}
           <div className="lg:col-span-2">
             <label className="block text-sm font-semibold text-gray-900 mb-3">
-              Colores
+              Colores Principales
             </label>
-            <div className="flex flex-wrap gap-3">
-              {availableColors.map((color) => (
-                <label
-                  key={color}
-                  className="flex items-center cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.personalizacion.colores.includes(color)}
-                    onChange={() => handleColorToggle(color)}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-12 h-12 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
-                      formData.personalizacion.colores.includes(color)
-                        ? 'border-buffalo-green ring-2 ring-buffalo-green ring-opacity-50'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  >
-                    {formData.personalizacion.colores.includes(color) && (
-                      <CheckCircle className="h-6 w-6 text-white drop-shadow-md" />
-                    )}
+            <div className="space-y-3">
+              {coloresPrincipales.map((color: string, index: number) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <div className="flex-shrink-0 w-24">
+                    <span className="text-sm text-gray-700 font-medium">Color {index + 1}</span>
                   </div>
-                </label>
+                  <ColorPicker
+                    color={color}
+                    onChange={(newColor) => handleColorChange(index, newColor)}
+                    label={`Color ${index + 1}`}
+                  />
+                </div>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Seleccionados: {formData.personalizacion.colores.length > 0 ? formData.personalizacion.colores.join(', ') : 'Ninguno'}
+            <p className="text-xs text-gray-500 mt-3">
+              Haz clic en cualquier color para personalizar el tono
             </p>
           </div>
 
@@ -986,7 +975,7 @@ export default function CrearClientePage() {
     tipoCliente: 'Directo',
     partnership_id: null as number | null,
     personalizacion: {
-      colores: [] as string[],
+      coloresPrincipales: ['#00C896', '#0066CC', '#FF6B6B'] as string[],
       fuente: '',
       estilo: '',
       contacto: ''
@@ -1172,18 +1161,17 @@ export default function CrearClientePage() {
     }))
   }
 
-  const handleColorToggle = (color: string) => {
+  const handleColorChange = (index: number, color: string) => {
     setFormData((prev: any) => {
-      const currentColors = prev.personalizacion.colores || []
-      const newColors = currentColors.includes(color)
-        ? currentColors.filter((c: string) => c !== color)
-        : [...currentColors, color]
+      const currentColors = prev.personalizacion.coloresPrincipales || ['#00C896', '#0066CC', '#FF6B6B']
+      const newColors = [...currentColors]
+      newColors[index] = color
       
       return {
         ...prev,
         personalizacion: {
           ...prev.personalizacion,
-          colores: newColors
+          coloresPrincipales: newColors
         }
       }
     })
@@ -2703,6 +2691,21 @@ export default function CrearClientePage() {
         mapperJSON = crearMapperNormalizado()
       }
       
+      // Transform personalizacion: convert coloresPrincipales to color array with hex values
+      // Save hexadecimal color values in the 'color' array
+      const personalizacionForDB = {
+        ...formData.personalizacion,
+        color: formData.personalizacion?.coloresPrincipales 
+          ? formData.personalizacion.coloresPrincipales // Save hex values directly
+          : ['#00C896', '#0066CC', '#FF6B6B'] // Default hex values if not set
+      }
+      // Remove coloresPrincipales from the object (we only save 'color' array with hex values)
+      delete personalizacionForDB.coloresPrincipales
+      
+      console.log('🎨 Personalización transformada para DB:')
+      console.log('   - Antes (coloresPrincipales):', formData.personalizacion?.coloresPrincipales)
+      console.log('   - Después (color con valores hexadecimales):', personalizacionForDB.color)
+
       const nuevoCliente = {
         id: clienteId,  // ✅ CAMBIO: Antes usaba Date.now(), ahora usa UUID
         nombreEmpresa: formData.nombreEmpresa,
@@ -2711,7 +2714,7 @@ export default function CrearClientePage() {
         password: formData.password,
         tipoCliente: formData.tipoCliente,
         partnership_id: formData.partnership_id || null,  // ✅ Partnership ID from step 1
-        personalizacion: formData.personalizacion,  // ✅ Nuevo campo de personalización
+        personalizacion: personalizacionForDB,  // ✅ Personalización con array 'color' de índices
         verticales: formData.verticales,
         webhooks: formData.webhooks,
         columnasPostgres: formData.columnasPostgres,
@@ -2844,7 +2847,7 @@ export default function CrearClientePage() {
         {/* Contenido del Paso Actual */}
         <div className="mb-8">
           {currentStep === 1 && <Step1 formData={formData} handleInputChange={handleInputChange} partnerships={partnerships} />}
-          {currentStep === 2 && <Step2 formData={formData} handlePersonalizacionChange={handlePersonalizacionChange} handleColorToggle={handleColorToggle} />}
+          {currentStep === 2 && <Step2 formData={formData} handlePersonalizacionChange={handlePersonalizacionChange} handleColorChange={handleColorChange} />}
           {currentStep === 3 && <Step3 formData={formData} handleVerticalChange={handleVerticalChange} />}
           {currentStep === 4 && <Step4 formData={formData} handleWebhookChange={handleWebhookChange} getWebhookGroups={getWebhookGroups} />}
           {currentStep === 5 && <Step5 formData={formData} addColumna={addColumna} updateColumna={updateColumna} removeColumna={removeColumna} limpiarColumnas={limpiarColumnas} tiposDatos={tiposDatos} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} generarColumnasConIA={generarColumnasConIA} aiLoading={aiLoading} />}
