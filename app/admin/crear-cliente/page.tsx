@@ -2157,7 +2157,12 @@ export default function CrearClientePage() {
       return ''
     }
     
-    const tablaNombre = formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data'
+    const tablaNombre = formData.nombreEmpresa
+      ? formData.nombreEmpresa.toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_]+/g, '_')
+          .replace(/^_+|_+$/g, '')
+      : 'cliente_data'
     
     let sql = `-- ============================================\n`
     sql += `-- Tabla: ${tablaNombre}\n`
@@ -2167,6 +2172,9 @@ export default function CrearClientePage() {
     sql += `-- ============================================\n\n`
     
     sql += `CREATE TABLE IF NOT EXISTS ${tablaNombre} (\n`
+    
+    // Agregar columna cliente_id primero (para relación con tabla clientes)
+    sql += `  cliente_id INTEGER NOT NULL, -- ID numérico del cliente en la tabla clientes (relación con n8n: ${clienteId})\n`
     
     // Columnas
     formData.columnasPostgres.forEach((col: any, index: number) => {
@@ -2184,10 +2192,14 @@ export default function CrearClientePage() {
       sql += '\n'
     })
     
+    // Agregar foreign key constraint
+    sql += `,\n  CONSTRAINT fk_${tablaNombre}_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE\n`
+    
     sql += `);\n\n`
     
     // Índices
     sql += `-- Índices\n`
+    sql += `CREATE INDEX IF NOT EXISTS idx_${tablaNombre}_cliente_id ON ${tablaNombre}(cliente_id);\n`
     sql += `CREATE INDEX IF NOT EXISTS idx_${tablaNombre}_created ON ${tablaNombre}(fecha_hora);\n`
     
     // Buscar columna de cliente o ejecutor para índice
@@ -2210,7 +2222,12 @@ export default function CrearClientePage() {
       return ''
     }
     
-    const tablaNombre = formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data'
+    const tablaNombre = formData.nombreEmpresa
+      ? formData.nombreEmpresa.toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_]+/g, '_')
+          .replace(/^_+|_+$/g, '')
+      : 'cliente_data'
     const procedureName = `sp_insertar_${tablaNombre}`
     
     let sql = `-- ============================================\n`
@@ -2219,6 +2236,13 @@ export default function CrearClientePage() {
     sql += `-- ============================================\n\n`
     
     sql += `CREATE OR REPLACE FUNCTION ${procedureName}(\n`
+    
+    // Agregar parámetro cliente_id primero
+    sql += `  p_cliente_id INTEGER`
+    if (formData.columnasPostgres.length > 0) {
+      sql += ','
+    }
+    sql += '\n'
     
     // Parámetros
     formData.columnasPostgres.forEach((col: any, index: number) => {
@@ -2240,6 +2264,13 @@ export default function CrearClientePage() {
     sql += `  -- Insertar registro\n`
     sql += `  INSERT INTO ${tablaNombre} (\n`
     
+    // Agregar cliente_id primero en la lista de columnas
+    sql += `    cliente_id`
+    if (formData.columnasPostgres.length > 0) {
+      sql += ','
+    }
+    sql += '\n'
+    
     // Lista de columnas
     formData.columnasPostgres.forEach((col: any, index: number) => {
       sql += `    ${col.nombre}`
@@ -2250,6 +2281,13 @@ export default function CrearClientePage() {
     })
     
     sql += `  ) VALUES (\n`
+    
+    // Agregar p_cliente_id primero en la lista de valores
+    sql += `    p_cliente_id`
+    if (formData.columnasPostgres.length > 0) {
+      sql += ','
+    }
+    sql += '\n'
     
     // Lista de valores (parámetros)
     formData.columnasPostgres.forEach((col: any, index: number) => {
@@ -2270,6 +2308,8 @@ export default function CrearClientePage() {
     sql += `-- Ejemplo de uso:\n`
     sql += `-- ============================================\n`
     sql += `-- SELECT ${procedureName}(\n`
+    // Agregar ejemplo para cliente_id primero
+    sql += `--   1,  -- p_cliente_id (ID numérico del cliente en la tabla clientes)\n`
     formData.columnasPostgres.forEach((col: any, index: number) => {
       const ejemploValor = generarDatoSintetico(col.tipo, col.nombre, col.descripcion)
       const valorSQL = typeof ejemploValor === 'string' ? `'${ejemploValor}'` : 
@@ -2281,7 +2321,7 @@ export default function CrearClientePage() {
       if (index < formData.columnasPostgres.length - 1) {
         sql += ','
       }
-      sql += `  -- ${col.nombre}\n`
+      sql += `  -- p_${col.nombre}\n`
     })
     sql += `-- );\n`
     
@@ -2504,7 +2544,7 @@ export default function CrearClientePage() {
         nombre_empresa: formData.nombreEmpresa || 'sin_nombre',
         tabla_nombre: formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data',
         timestamp: new Date().toISOString(),
-        total_columnas: formData.columnasPostgres?.length || 0
+        total_columnas: (formData.columnasPostgres?.length || 0) + 1 // +1 para cliente_id
       },
       create_table: {
         descripcion: 'Script SQL para crear la tabla principal',
@@ -2515,12 +2555,20 @@ export default function CrearClientePage() {
         procedure_name: `sp_insertar_${formData.nombreEmpresa?.toLowerCase().replace(/\s+/g, '_') || 'cliente_data'}`,
         script: storedProcedureScript
       },
-      columnas_detalle: formData.columnasPostgres.map((col: any) => ({
-        nombre: col.nombre,
-        tipo: col.tipo,
-        descripcion: col.descripcion,
-        ejemplo_valor: generarDatoSintetico(col.tipo, col.nombre, col.descripcion)
-      }))
+      columnas_detalle: [
+        {
+          nombre: 'cliente_id',
+          tipo: 'INTEGER',
+          descripcion: `ID numérico del cliente en la tabla clientes (relación con n8n: ${clienteId})`,
+          ejemplo_valor: 1
+        },
+        ...formData.columnasPostgres.map((col: any) => ({
+          nombre: col.nombre,
+          tipo: col.tipo,
+          descripcion: col.descripcion,
+          ejemplo_valor: generarDatoSintetico(col.tipo, col.nombre, col.descripcion)
+        }))
+      ]
     }
     
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')

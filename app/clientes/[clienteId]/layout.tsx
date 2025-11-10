@@ -197,11 +197,19 @@ export default function ClienteLayout({ children }: ClienteLayoutProps) {
         gruposNavegacion = {
           'Navegación': [
             { name: 'Dashboard', href: `/clientes/${clienteId}/dashboard-kpis`, icon: 'Home' },
+            { name: 'Dashboard Llamadas', href: `/clientes/${clienteId}/dashboard-llamadas`, icon: 'Home' },
+            { name: 'Dashboard Texto', href: `/clientes/${clienteId}/dashboard-texto`, icon: 'Home' },
+            { name: 'Dashboard Automatizaciones', href: `/clientes/${clienteId}/dashboard-automatizaciones`, icon: 'Home' },
             { name: 'Llamadas', href: `/clientes/${clienteId}/llamadas`, icon: 'Phone' },
             { name: 'Texto/Chat', href: `/clientes/${clienteId}/texto`, icon: 'MessageSquare' },
             { name: 'Automatizaciones', href: `/clientes/${clienteId}/automatizaciones`, icon: 'Bot' },
+            { name: 'Incidencias', href: `/clientes/${clienteId}/incidencias`, icon: 'AlertTriangle' },
+            { name: 'Campañas', href: `/clientes/${clienteId}/campanas`, icon: 'Target' },
+            { name: 'Knowledge', href: `/clientes/${clienteId}/knowledge`, icon: 'BookOpen' },
+            { name: 'Prueba', href: `/clientes/${clienteId}/llamadas/prueba`, icon: 'TestTube' },
             { name: 'Buscar', href: `/clientes/${clienteId}/buscar`, icon: 'Search' },
-            { name: 'Dinámico', href: `/clientes/${clienteId}/dinamico`, icon: 'BarChart3' }
+            { name: 'Dinámico', href: `/clientes/${clienteId}/dinamico`, icon: 'BarChart3' },
+            { name: 'Dashboard IA', href: `/clientes/${clienteId}/dashboard-ia`, icon: 'Brain' }
           ]
         }
       }
@@ -212,11 +220,19 @@ export default function ClienteLayout({ children }: ClienteLayoutProps) {
     gruposNavegacion = {
       'Navegación': [
         { name: 'Dashboard', href: `/clientes/${clienteId}/dashboard-kpis`, icon: 'Home' },
+        { name: 'Dashboard Llamadas', href: `/clientes/${clienteId}/dashboard-llamadas`, icon: 'Home' },
+        { name: 'Dashboard Texto', href: `/clientes/${clienteId}/dashboard-texto`, icon: 'Home' },
+        { name: 'Dashboard Automatizaciones', href: `/clientes/${clienteId}/dashboard-automatizaciones`, icon: 'Home' },
         { name: 'Llamadas', href: `/clientes/${clienteId}/llamadas`, icon: 'Phone' },
         { name: 'Texto/Chat', href: `/clientes/${clienteId}/texto`, icon: 'MessageSquare' },
         { name: 'Automatizaciones', href: `/clientes/${clienteId}/automatizaciones`, icon: 'Bot' },
+        { name: 'Incidencias', href: `/clientes/${clienteId}/incidencias`, icon: 'AlertTriangle' },
+        { name: 'Campañas', href: `/clientes/${clienteId}/campanas`, icon: 'Target' },
+        { name: 'Knowledge', href: `/clientes/${clienteId}/knowledge`, icon: 'BookOpen' },
+        { name: 'Prueba', href: `/clientes/${clienteId}/llamadas/prueba`, icon: 'TestTube' },
         { name: 'Buscar', href: `/clientes/${clienteId}/buscar`, icon: 'Search' },
-        { name: 'Dinámico', href: `/clientes/${clienteId}/dinamico`, icon: 'BarChart3' }
+        { name: 'Dinámico', href: `/clientes/${clienteId}/dinamico`, icon: 'BarChart3' },
+        { name: 'Dashboard IA', href: `/clientes/${clienteId}/dashboard-ia`, icon: 'Brain' }
       ]
     }
   }

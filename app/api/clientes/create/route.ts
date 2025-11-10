@@ -260,6 +260,165 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Step 5: Create table for cliente if columnasPostgres are provided
+    if (body.columnasPostgres && body.columnasPostgres.length > 0) {
+      try {
+        console.log('📊 Creando tabla para cliente...')
+        // Sanitize table name: replace spaces and invalid chars with underscores (no hyphens)
+        let tablaNombre = body.nombreEmpresa
+          ? body.nombreEmpresa.toLowerCase()
+              .replace(/\s+/g, '_')        // spaces -> underscore
+              .replace(/[^a-z0-9_]+/g, '_') // any non [a-z0-9_] -> underscore
+              .replace(/^_+|_+$/g, '')      // trim underscores
+          : 'cliente_data'
+        
+        // Use unquoted sanitized name (valid SQL identifier)
+        const tablaNombreQuoted = tablaNombre
+        
+        // Build CREATE TABLE SQL
+        let createTableSQL = `CREATE TABLE IF NOT EXISTS ${tablaNombreQuoted} (\n`
+        
+        // Add cliente_id column first
+        createTableSQL += `  cliente_id INTEGER NOT NULL`
+        
+        // Add other columns
+        body.columnasPostgres.forEach((col: any, index: number) => {
+          createTableSQL += ',\n'
+          
+          // Sanitize column name (quote if needed)
+          const colName = col.nombre.includes('-') || /[^a-z0-9_]/i.test(col.nombre) 
+            ? `"${col.nombre}"` 
+            : col.nombre
+          
+          // Get type - ensure it's properly formatted
+          let colType = col.tipo || 'VARCHAR(255)'
+          
+          // Ensure VARCHAR has length if not specified
+          if (colType.toUpperCase().startsWith('VARCHAR') && !colType.includes('(')) {
+            colType = 'VARCHAR(255)'
+          }
+          
+          const notNull = col.nullable === false ? ' NOT NULL' : ''
+          const defaultValue = col.default ? ` DEFAULT '${col.default.replace(/'/g, "''")}'` : ''
+          
+          createTableSQL += `  ${colName} ${colType}${notNull}${defaultValue}`
+        })
+        
+        // Add foreign key constraint (sanitize constraint name)
+        const constraintName = `fk_${tablaNombre.replace(/[^a-z0-9_]/g, '_')}_cliente`
+        createTableSQL += `,\n  CONSTRAINT ${constraintName} FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE\n`
+        createTableSQL += `);\n`
+        
+        // Execute CREATE TABLE (log for troubleshooting)
+        console.log('🧱 CREATE TABLE SQL:\n' + createTableSQL)
+        await client.query(createTableSQL)
+        console.log(`✅ Tabla ${tablaNombreQuoted} creada exitosamente`)
+
+        // Apply comments separately (safer than inline comments)
+        try {
+          const safeCompany = (body.nombreEmpresa || '').replace(/'/g, "''")
+          await client.query(`COMMENT ON TABLE ${tablaNombreQuoted} IS 'Tabla generada automáticamente para cliente: ${safeCompany} (${clienteId})';`)
+          for (const col of body.columnasPostgres) {
+            if (col.descripcion) {
+              const colName = col.nombre.includes('-') || /[^a-z0-9_]/i.test(col.nombre) ? `\"${col.nombre}\"` : col.nombre
+              const desc = (col.descripcion as string).replace(/'/g, "''")
+              await client.query(`COMMENT ON COLUMN ${tablaNombreQuoted}.${colName} IS '${desc}';`)
+            }
+          }
+        } catch (commentErr) {
+          console.warn('⚠️ Comentarios no aplicados:', commentErr)
+        }
+        
+        // Create indexes (sanitize index names)
+        const idxNameCliente = `idx_${tablaNombre.replace(/[^a-z0-9_]/g, '_')}_cliente_id`
+        await client.query(`CREATE INDEX IF NOT EXISTS ${idxNameCliente} ON ${tablaNombreQuoted}(cliente_id);`)
+        
+        // Create index on fecha_hora if column exists
+        const hasFechaHora = body.columnasPostgres.some((col: any) => 
+          col.nombre.toLowerCase().includes('fecha') || col.nombre.toLowerCase().includes('hora')
+        )
+        if (hasFechaHora) {
+          const fechaCol = body.columnasPostgres.find((col: any) => 
+            col.nombre.toLowerCase().includes('fecha') || col.nombre.toLowerCase().includes('hora')
+          )
+          if (fechaCol) {
+            const idxNameCreated = `idx_${tablaNombre.replace(/[^a-z0-9_]/g, '_')}_created`
+            await client.query(`CREATE INDEX IF NOT EXISTS ${idxNameCreated} ON ${tablaNombreQuoted}(${fechaCol.nombre});`)
+          }
+        }
+        
+        // Create stored procedure (sanitize procedure name)
+        const procedureName = `sp_insertar_${tablaNombre.replace(/[^a-z0-9_]/g, '_')}`
+        let storedProcedureSQL = `CREATE OR REPLACE FUNCTION ${procedureName}(\n`
+        
+        // Add p_cliente_id parameter first
+        storedProcedureSQL += `  p_cliente_id INTEGER`
+        if (body.columnasPostgres.length > 0) {
+          storedProcedureSQL += ','
+        }
+        storedProcedureSQL += '\n'
+        
+        // Add other parameters
+        body.columnasPostgres.forEach((col: any, index: number) => {
+          storedProcedureSQL += `  p_${col.nombre} ${col.tipo}`
+          if (index < body.columnasPostgres.length - 1) {
+            storedProcedureSQL += ','
+          }
+          storedProcedureSQL += '\n'
+        })
+        
+        storedProcedureSQL += `) RETURNS UUID AS $$\n`
+        storedProcedureSQL += `DECLARE\n`
+        storedProcedureSQL += `  v_id UUID;\n`
+        storedProcedureSQL += `BEGIN\n`
+        storedProcedureSQL += `  v_id := gen_random_uuid();\n\n`
+        storedProcedureSQL += `  INSERT INTO ${tablaNombreQuoted} (\n`
+        storedProcedureSQL += `    cliente_id`
+        if (body.columnasPostgres.length > 0) {
+          storedProcedureSQL += ','
+        }
+        storedProcedureSQL += '\n'
+        
+        body.columnasPostgres.forEach((col: any, index: number) => {
+          storedProcedureSQL += `    ${col.nombre}`
+          if (index < body.columnasPostgres.length - 1) {
+            storedProcedureSQL += ','
+          }
+          storedProcedureSQL += '\n'
+        })
+        
+        storedProcedureSQL += `  ) VALUES (\n`
+        storedProcedureSQL += `    p_cliente_id`
+        if (body.columnasPostgres.length > 0) {
+          storedProcedureSQL += ','
+        }
+        storedProcedureSQL += '\n'
+        
+        body.columnasPostgres.forEach((col: any, index: number) => {
+          storedProcedureSQL += `    p_${col.nombre}`
+          if (index < body.columnasPostgres.length - 1) {
+            storedProcedureSQL += ','
+          }
+          storedProcedureSQL += '\n'
+        })
+        
+        storedProcedureSQL += `  );\n\n`
+        storedProcedureSQL += `  RETURN v_id;\n`
+        storedProcedureSQL += `END;\n`
+        storedProcedureSQL += `$$ LANGUAGE plpgsql;`
+        
+        // Execute stored procedure creation
+        await client.query(storedProcedureSQL)
+        console.log(`✅ Stored procedure ${procedureName} creado exitosamente`)
+        
+      } catch (tableError: any) {
+        console.error('❌ Error creando tabla:', tableError)
+        // Don't fail the entire transaction if table creation fails
+        // Just log the error
+        console.warn('⚠️ Continuando sin crear la tabla (error no crítico)')
+      }
+    }
+
     await client.query('COMMIT')
 
     return NextResponse.json({
