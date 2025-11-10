@@ -12,6 +12,7 @@ export async function GET() {
         c.activo,
         c.fecha_creacion,
         c.created_at,
+        c.personalizacion,
         u.username,
         p.id as partnership_id,
         p.nombre as partnership_nombre
@@ -24,20 +25,28 @@ export async function GET() {
          c.nombre_empresa`
     )
 
-    const clientes = result.rows.map(row => ({
-      id: row.id,
-      nombreEmpresa: row.nombre_empresa,
-      usuario: row.username,
-      tipo: row.partnership_id ? 'Partnership' as const : 'Directo' as const,
-      estado: row.activo ? 'Activo' as const : 'Inactivo' as const,
-      fechaCreacion: row.fecha_creacion || row.created_at,
-      logo: row.logo_empresa || '',
-      partnership: row.partnership_nombre || undefined,
-      partnership_id: row.partnership_id || undefined,
-      colorPrincipal: '#00C896', // Default color
-      verticales: [],
-      webhooks: []
-    }))
+    const clientes = result.rows.map(row => {
+      // Extract colors from personalizacion.color array
+      const personalizacion = row.personalizacion || {}
+      const colors = personalizacion.color || []
+      const colorPrincipal = colors.length > 0 ? colors[0] : '#00C896' // Use first color or default
+      
+      return {
+        id: row.id,
+        nombreEmpresa: row.nombre_empresa,
+        usuario: row.username,
+        tipo: row.partnership_id ? 'Partnership' as const : 'Directo' as const,
+        estado: row.activo ? 'Activo' as const : 'Inactivo' as const,
+        fechaCreacion: row.fecha_creacion || row.created_at,
+        logo: row.logo_empresa || '',
+        partnership: row.partnership_nombre || undefined,
+        partnership_id: row.partnership_id || undefined,
+        personalizacion: personalizacion, // Include full personalizacion object
+        colorPrincipal: colorPrincipal,
+        verticales: [],
+        webhooks: []
+      }
+    })
 
     return NextResponse.json({ success: true, clientes })
   } catch (error) {

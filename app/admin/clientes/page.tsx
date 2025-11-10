@@ -28,6 +28,12 @@ interface Cliente {
   webhooks?: string[]
   partnership?: string // Para agrupar partnerships
   colorPrincipal?: string // Color principal de la empresa
+  personalizacion?: {
+    color?: string[]
+    fuente?: string
+    estilo?: string
+    contacto?: string
+  }
 }
 
 interface Partnership {
@@ -186,9 +192,19 @@ export default function ClientesPage() {
 
   const handleEdit = (cliente: Cliente) => {
     setClienteToEdit(cliente)
+    
+    // Get colors from database personalizacion.color array, or use defaults
+    const colorsFromDB = cliente.personalizacion?.color || []
+    const defaultColors = ['#00C896', '#0066CC', '#FF6B6B']
+    const coloresPrincipales = colorsFromDB.length >= 3 
+      ? colorsFromDB.slice(0, 3) // Use first 3 colors from DB
+      : colorsFromDB.length > 0
+      ? [...colorsFromDB, ...defaultColors.slice(colorsFromDB.length)] // Fill remaining with defaults
+      : defaultColors // Use all defaults if no colors in DB
+    
     setEditForm({
       nombreEmpresa: cliente.nombreEmpresa,
-      coloresPrincipales: ['#00C896', '#1a1a1a', '#0066cc'], // Colores por defecto
+      coloresPrincipales: coloresPrincipales,
       usuario: cliente.usuario,
       password: '', // No mostramos la contraseña actual
       logo: cliente.logo || ''
@@ -196,20 +212,57 @@ export default function ClientesPage() {
     setShowEditModal(true)
   }
 
-  const handleEditSubmit = () => {
-    if (clienteToEdit) {
-      setClientes(clientes.map(c => 
-        c.id === clienteToEdit.id 
-          ? { 
-              ...c, 
-              nombreEmpresa: editForm.nombreEmpresa,
-              usuario: editForm.usuario,
-              logo: editForm.logo
-            }
-          : c
-      ))
-      setShowEditModal(false)
-      setClienteToEdit(null)
+  const handleEditSubmit = async () => {
+    if (!clienteToEdit) return
+
+    try {
+      setLoading(true)
+      
+      // Prepare personalizacion with color array
+      const personalizacion = {
+        ...clienteToEdit.personalizacion,
+        color: editForm.coloresPrincipales
+      }
+
+      const response = await fetch(`/api/clientes/${clienteToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombreEmpresa: editForm.nombreEmpresa,
+          usuario: editForm.usuario,
+          password: editForm.password,
+          logo: editForm.logo,
+          coloresPrincipales: editForm.coloresPrincipales
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Update local state
+        setClientes(clientes.map(c => 
+          c.id === clienteToEdit.id 
+            ? { 
+                ...c, 
+                nombreEmpresa: editForm.nombreEmpresa,
+                usuario: editForm.usuario,
+                logo: editForm.logo,
+                personalizacion: personalizacion,
+                colorPrincipal: editForm.coloresPrincipales[0] || c.colorPrincipal
+              }
+            : c
+        ))
+        setShowEditModal(false)
+        setClienteToEdit(null)
+        setError('')
+      } else {
+        setError(data.message || 'Error al actualizar el cliente')
+      }
+    } catch (err) {
+      console.error('Error updating cliente:', err)
+      setError('Error al conectar con el servidor')
+    } finally {
+      setLoading(false)
     }
   }
 
