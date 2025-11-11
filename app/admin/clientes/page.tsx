@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { 
   Plus, 
   Eye, 
@@ -13,7 +13,8 @@ import {
   Settings,
   Building,
   X,
-  MoreHorizontal
+  MoreHorizontal,
+  ChevronDown
 } from 'lucide-react'
 
 interface Cliente {
@@ -78,6 +79,24 @@ export default function ClientesPage() {
 
   // Clientes are now loaded from database via API
 
+  // Pagination, search and in-memory cache (30s TTL)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const cacheRef = (globalThis as any).__clientesCacheRef || { map: new Map<string, any>() }
+  ;(globalThis as any).__clientesCacheRef = cacheRef
+
+  // Collapse/expand partnerships
+  const [collapsedPartnerships, setCollapsedPartnerships] = useState<Record<string, boolean>>({})
+  const togglePartnership = (name: string) => {
+    setCollapsedPartnerships(prev => ({ ...prev, [name]: !prev[name] }))
+  }
+  // Collapse state for "Clientes Directos" (default collapsed)
+  const [collapsedDirectos, setCollapsedDirectos] = useState(true)
+
   useEffect(() => {
     // Fetch partnerships, stats, and clientes from database
     const fetchPartnerships = async () => {
@@ -106,17 +125,48 @@ export default function ClientesPage() {
 
     const fetchClientes = async () => {
       try {
-        const res = await fetch('/api/clientes')
+        const params = new URLSearchParams()
+        if (debouncedSearch) params.set('q', debouncedSearch)
+        params.set('page', String(page))
+        params.set('pageSize', String(pageSize))
+        const url = `/api/clientes?${params.toString()}`
+
+        const cacheKey = url
+        const now = Date.now()
+        const cached = cacheRef.map.get(cacheKey)
+        const TTL = 30_000
+        if (cached && (now - cached.ts) < TTL) {
+          setClientes(cached.clientes || [])
+          setTotal(cached.total || 0)
+          setTotalPages(cached.totalPages || 1)
+          return
+        }
+
+        const res = await fetch(url, { cache: 'no-store' })
         const data = await res.json()
-        if (data.success && data.clientes) {
-          setClientes(data.clientes)
+        if (res.ok && data.success) {
+          setClientes(data.clientes || [])
+          if (typeof data.total === 'number') {
+            setTotal(data.total || 0)
+            setTotalPages(data.totalPages || 1)
+          } else {
+            // Back-compat when API returns full list
+            const all = data.clientes || []
+            setTotal(all.length)
+            setTotalPages(Math.max(1, Math.ceil(all.length / pageSize)))
+          }
+          cacheRef.map.set(cacheKey, { clientes: data.clientes || [], total: data.total || 0, totalPages: data.totalPages || 1, ts: now })
         } else {
           setClientes([])
+          setTotal(0)
+          setTotalPages(1)
         }
       } catch (err) {
         console.error('Error fetching clientes:', err)
         setError('Error al cargar los clientes')
         setClientes([])
+        setTotal(0)
+        setTotalPages(1)
       }
     }
 
@@ -128,7 +178,16 @@ export default function ClientesPage() {
     }
     
     loadData()
-  }, [])
+  }, [debouncedSearch, page, pageSize])
+
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300)
+    return () => clearTimeout(t)
+  }, [searchTerm])
+
+  // Reset to first page when searching
+  useEffect(() => { setPage(1) }, [debouncedSearch])
 
   // Cerrar menús al hacer clic fuera
   useEffect(() => {
@@ -146,34 +205,52 @@ export default function ClientesPage() {
 
   // Stats are now loaded from database via API in useEffect
 
-  const clientesDirectos = clientes.filter(c => c.tipo === 'Directo')
-  const clientesPartnership = clientes.filter(c => c.tipo === 'Partnership')
+  const clientesDirectos = useMemo(() => clientes.filter(c => c.tipo === 'Directo'), [clientes])
+  const clientesPartnership = useMemo(() => clientes.filter(c => c.tipo === 'Partnership'), [clientes])
   
   // Agrupar partnerships por nombre (from database partnership field)
-  const partnershipsAgrupados = clientesPartnership.reduce((acc, cliente) => {
-    // Use partnership name from database relationship
-    const partnership = cliente.partnership || 'Sin Partnership'
-    if (!partnership || partnership === 'Sin Partnership') return acc
-    
-    if (!acc[partnership]) {
-      acc[partnership] = []
-    }
-    acc[partnership].push(cliente)
-    return acc
-  }, {} as Record<string, Cliente[]>)
+  const partnershipsAgrupados = useMemo(() => {
+    return clientesPartnership.reduce((acc, cliente) => {
+      // Use partnership name from database relationship
+      const partnership = cliente.partnership || 'Sin Partnership'
+      if (!partnership || partnership === 'Sin Partnership') return acc
+      
+      if (!acc[partnership]) {
+        acc[partnership] = []
+      }
+      acc[partnership].push(cliente)
+      return acc
+    }, {} as Record<string, Cliente[]>)
+  }, [clientesPartnership])
 
   // Partnerships con clientes (from database relationships)
-  const partnershipsConClientes = Object.keys(partnershipsAgrupados).filter(key => 
-    partnershipsAgrupados[key].length > 0
+  const partnershipsConClientes = useMemo(
+    () => Object.keys(partnershipsAgrupados).filter(key => partnershipsAgrupados[key].length > 0),
+    [partnershipsAgrupados]
   )
   
   // Partnerships de la base de datos que no tienen clientes asignados aún
-  const partnershipsVaciosDB = partnerships
-    .filter(p => {
-      // No está en los partnerships con clientes
-      return !partnershipsConClientes.includes(p.nombre)
+  const partnershipsVaciosDB = useMemo(
+    () => partnerships
+      .filter(p => !partnershipsConClientes.includes(p.nombre))
+      .map(p => p.nombre),
+    [partnerships, partnershipsConClientes]
+  )
+
+  // Default collapse state for partnerships (collapsed=true) without overriding user toggles
+  useEffect(() => {
+    setCollapsedPartnerships(prev => {
+      let changed = false
+      const next = { ...prev }
+      for (const name of partnershipsConClientes) {
+        if (next[name] === undefined) { next[name] = true; changed = true }
+      }
+      for (const name of partnershipsVaciosDB) {
+        if (next[name] === undefined) { next[name] = true; changed = true }
+      }
+      return changed ? next : prev
     })
-    .map(p => p.nombre)
+  }, [partnershipsConClientes, partnershipsVaciosDB])
 
   const handleDelete = (cliente: Cliente) => {
     setClienteToDelete(cliente)
@@ -412,10 +489,21 @@ export default function ClientesPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 h-32 flex items-center justify-between px-8">
         <h1 className="text-3xl font-bold text-gray-900">Gestión de Clientes</h1>
-        <button className="bg-buffalo-green text-white px-6 py-3 rounded-lg font-semibold text-lg hover:bg-buffalo-green/90 transition-colors flex items-center">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar por nombre, usuario o partnership"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent w-80"
+            />
+          </div>
+          <button className="bg-buffalo-green text-white px-6 py-3 rounded-lg font-semibold text-lg hover:bg-buffalo-green/90 transition-colors flex items-center">
           <Plus className="h-5 w-5 mr-2" />
           Nuevo Cliente
-        </button>
+          </button>
+        </div>
       </div>
 
       {/* Estadísticas - Solo 4 en una fila */}
@@ -462,93 +550,134 @@ export default function ClientesPage() {
 
       {/* Contenido Principal */}
       <div className="px-8 py-6 space-y-8">
+        {/* Top pagination toolbar */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between px-6 py-3 text-sm text-gray-700">
+            <div>
+              {total > 0 ? (
+                <span>
+                  Página {page} de {totalPages} · {total} clientes
+                </span>
+              ) : (
+                <span>Sin resultados</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Filas por página</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+                className="px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* Caja de Clientes Directos */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <Users className="h-5 w-5 mr-2 text-buffalo-green" />
-              Clientes Directos
-              <span className="ml-2 bg-buffalo-green text-white text-sm px-2 py-1 rounded-full">
-                {clientesDirectos.length}
-              </span>
-            </h2>
-          </div>
-          <div className="p-6">
-            {clientesDirectos.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No hay clientes directos</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <button
+                  onClick={() => setCollapsedDirectos(v => !v)}
+                  aria-label="Toggle clientes directos"
+                  className="p-2 mr-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                >
+                  <ChevronDown className={`h-5 w-5 transition-transform ${collapsedDirectos ? '' : 'rotate-180'}`} />
+                </button>
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <Users className="h-5 w-5 mr-2 text-buffalo-green" />
+                  Clientes Directos
+                  <span className="ml-2 bg-buffalo-green text-white text-sm px-2 py-1 rounded-full">
+                    {clientesDirectos.length}
+                  </span>
+                </h2>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {clientesDirectos.map((cliente) => (
-                  <div
-                    key={cliente.id}
-                    className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 cursor-pointer relative flex items-center"
-                  >
+            </div>
+          </div>
+          {!collapsedDirectos && (
+            <div className="p-6">
+              {clientesDirectos.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">No hay clientes directos</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {clientesDirectos.map((cliente) => (
+                    <div
+                      key={cliente.id}
+                      className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 cursor-pointer relative flex items-center"
+                    >
 
-                    {/* Logo de la Empresa - Iniciales */}
-                    <div className="flex-shrink-0 mr-4">
-                      <div 
-                        className="h-12 w-12 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: cliente.colorPrincipal || '#00C896' }}
-                      >
-                        <span className="text-white font-bold text-lg">
-                          {cliente.nombreEmpresa.split(' ').map(word => word.charAt(0)).join('').substring(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Información Principal */}
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-base mb-1">{cliente.nombreEmpresa}</h3>
-                          <p className="text-gray-600 text-sm mb-1">@{cliente.usuario}</p>
-                          <p className="text-gray-500 text-xs">{cliente.fechaCreacion}</p>
-                        </div>
-                        
-                        {/* Estado */}
-                        <div className="flex-shrink-0 ml-4">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                            cliente.estado === 'Activo' 
-                              ? 'bg-buffalo-green text-white' 
-                              : 'bg-red-500 text-white'
-                          }`}>
-                            {cliente.estado === 'Activo' ? (
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                            ) : (
-                              <XCircle className="h-3 w-3 mr-1" />
-                            )}
-                            {cliente.estado}
+                      {/* Logo de la Empresa - Iniciales */}
+                      <div className="flex-shrink-0 mr-4">
+                        <div 
+                          className="h-12 w-12 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: cliente.colorPrincipal || '#00C896' }}
+                        >
+                          <span className="text-white font-bold text-lg">
+                            {cliente.nombreEmpresa.split(' ').map(word => word.charAt(0)).join('').substring(0, 2).toUpperCase()}
                           </span>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Acciones */}
-                    <div className="flex-shrink-0 ml-4 flex space-x-2">
-                      <button className="text-blue-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleEdit(cliente)}
-                        className="text-orange-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(cliente)}
-                        className="text-red-600 hover:text-red-700 transition-colors p-2 rounded hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {/* Información Principal */}
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-base mb-1">{cliente.nombreEmpresa}</h3>
+                            <p className="text-gray-600 text-sm mb-1">@{cliente.usuario}</p>
+                            <p className="text-gray-500 text-xs">{cliente.fechaCreacion}</p>
+                          </div>
+                          
+                          {/* Estado */}
+                          <div className="flex-shrink-0 ml-4">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                              cliente.estado === 'Activo' 
+                                ? 'bg-buffalo-green text-white' 
+                                : 'bg-red-500 text-white'
+                            }`}>
+                              {cliente.estado === 'Activo' ? (
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1" />
+                              )}
+                              {cliente.estado}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Acciones */}
+                      <div className="flex-shrink-0 ml-4 flex space-x-2">
+                        <button className="text-blue-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(cliente)}
+                          className="text-orange-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(cliente)}
+                          className="text-red-600 hover:text-red-700 transition-colors p-2 rounded hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Partnerships Vacíos desde Base de Datos */}
@@ -558,13 +687,22 @@ export default function ClientesPage() {
             <div key={partnershipName} className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <UserCheck className="h-5 w-5 mr-2 text-yellow-600" />
-                    Partnership: {partnershipName}
-                    <span className="ml-2 bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">
-                      Vacío
-                    </span>
-                  </h2>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => togglePartnership(partnershipName)}
+                      aria-label="Toggle partnership"
+                      className="p-2 mr-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                    >
+                      <ChevronDown className={`h-5 w-5 transition-transform ${collapsedPartnerships[partnershipName] ? '' : 'rotate-180'}`} />
+                    </button>
+                    <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                      <UserCheck className="h-5 w-5 mr-2 text-yellow-600" />
+                      Partnership: {partnershipName}
+                      <span className="ml-2 bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">
+                        Vacío
+                      </span>
+                    </h2>
+                  </div>
                   
                   {/* Menú de 3 puntos */}
                   <div className="relative">
@@ -590,13 +728,15 @@ export default function ClientesPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-6">
-                <div className="text-center py-8 text-gray-500">
-                  <UserCheck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm">Este partnership está vacío</p>
-                  <p className="text-xs text-gray-400">Los clientes aparecerán aquí cuando se añadan</p>
+              {!collapsedPartnerships[partnershipName] && (
+                <div className="p-6">
+                  <div className="text-center py-8 text-gray-500">
+                    <UserCheck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-sm">Este partnership está vacío</p>
+                    <p className="text-xs text-gray-400">Los clientes aparecerán aquí cuando se añadan</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )
         })}
@@ -608,13 +748,22 @@ export default function ClientesPage() {
             <div key={partnershipName} className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <UserCheck className="h-5 w-5 mr-2 text-yellow-600" />
-                    Partnership: {partnershipName}
-                    <span className="ml-2 bg-yellow-100 text-yellow-800 text-sm px-2 py-1 rounded-full">
-                      {clientes.length}
-                    </span>
-                  </h2>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => togglePartnership(partnershipName)}
+                      aria-label="Toggle partnership"
+                      className="p-2 mr-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                    >
+                      <ChevronDown className={`h-5 w-5 transition-transform ${collapsedPartnerships[partnershipName] ? '' : 'rotate-180'}`} />
+                    </button>
+                    <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                      <UserCheck className="h-5 w-5 mr-2 text-yellow-600" />
+                      Partnership: {partnershipName}
+                      <span className="ml-2 bg-yellow-100 text-yellow-800 text-sm px-2 py-1 rounded-full">
+                        {clientes.length}
+                      </span>
+                    </h2>
+                  </div>
                   
                   {/* Menú de 3 puntos */}
                   <div className="relative">
@@ -640,75 +789,77 @@ export default function ClientesPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-6">
-                <div className="space-y-3">
-                  {clientes.map((cliente) => (
-                  <div
-                    key={cliente.id}
-                    className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 cursor-pointer relative flex items-center"
-                  >
-
-                    {/* Logo de la Empresa - Iniciales */}
-                    <div className="flex-shrink-0 mr-4">
-                      <div 
-                        className="h-12 w-12 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: cliente.colorPrincipal || '#00C896' }}
-                      >
-                        <span className="text-white font-bold text-lg">
-                          {cliente.nombreEmpresa.split(' ').map(word => word.charAt(0)).join('').substring(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Información Principal */}
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-base mb-1">{cliente.nombreEmpresa}</h3>
-                          <p className="text-gray-600 text-sm mb-1">@{cliente.usuario}</p>
-                          <p className="text-gray-500 text-xs">{cliente.fechaCreacion}</p>
-                        </div>
-                        
-                        {/* Estado */}
-                        <div className="flex-shrink-0 ml-4">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                            cliente.estado === 'Activo' 
-                              ? 'bg-buffalo-green text-white' 
-                              : 'bg-red-500 text-white'
-                          }`}>
-                            {cliente.estado === 'Activo' ? (
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                            ) : (
-                              <XCircle className="h-3 w-3 mr-1" />
-                            )}
-                            {cliente.estado}
+              {!collapsedPartnerships[partnershipName] && (
+                <div className="p-6">
+                  <div className="space-y-3">
+                    {clientes.map((cliente) => (
+                    <div
+                      key={cliente.id}
+                      className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 cursor-pointer relative flex items-center"
+                    >
+                  
+                      {/* Logo de la Empresa - Iniciales */}
+                      <div className="flex-shrink-0 mr-4">
+                        <div 
+                          className="h-12 w-12 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: cliente.colorPrincipal || '#00C896' }}
+                        >
+                          <span className="text-white font-bold text-lg">
+                            {cliente.nombreEmpresa.split(' ').map(word => word.charAt(0)).join('').substring(0, 2).toUpperCase()}
                           </span>
                         </div>
                       </div>
+                  
+                      {/* Información Principal */}
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-base mb-1">{cliente.nombreEmpresa}</h3>
+                            <p className="text-gray-600 text-sm mb-1">@{cliente.usuario}</p>
+                            <p className="text-gray-500 text-xs">{cliente.fechaCreacion}</p>
+                          </div>
+                          
+                          {/* Estado */}
+                          <div className="flex-shrink-0 ml-4">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${ 
+                              cliente.estado === 'Activo' 
+                                ? 'bg-buffalo-green text-white' 
+                                : 'bg-red-500 text-white'
+                            }`}>
+                              {cliente.estado === 'Activo' ? (
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1" />
+                              )}
+                              {cliente.estado}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                  
+                      {/* Acciones */}
+                      <div className="flex-shrink-0 ml-4 flex space-x-2">
+                        <button className="text-blue-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(cliente)}
+                          className="text-orange-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(cliente)}
+                          className="text-red-600 hover:text-red-700 transition-colors p-2 rounded hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-
-                    {/* Acciones */}
-                    <div className="flex-shrink-0 ml-4 flex space-x-2">
-                      <button className="text-blue-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleEdit(cliente)}
-                        className="text-orange-600 hover:text-buffalo-green transition-colors p-2 rounded hover:bg-gray-100"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(cliente)}
-                        className="text-red-600 hover:text-red-700 transition-colors p-2 rounded hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                  ))}
                 </div>
-              </div>
+              )}
             </div>
           )
         })}
@@ -734,6 +885,34 @@ export default function ClientesPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Pagination footer */}
+        <div className="flex items-center justify-between px-1 py-1">
+          <div className="text-sm text-gray-700">
+            {total > 0 && (
+              <span>
+                Mostrando {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, total)} de {total}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-700">Página {page} de {totalPages}</span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="px-3 py-1 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       </div>
