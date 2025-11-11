@@ -147,6 +147,25 @@ CREATE TABLE IF NOT EXISTS kpis (
     FOREIGN KEY (aplicacion_id) REFERENCES aplicaciones(id) ON DELETE CASCADE
 );
 
+-- Tabla de incidencias
+CREATE TABLE IF NOT EXISTS incidencias (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER NOT NULL,
+    fecha_crea_incidencia TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado VARCHAR(50) NOT NULL,
+    descripcion TEXT NOT NULL,
+    prioridad VARCHAR(50) NULL,
+    fecha_resolucion TIMESTAMP NULL,
+    fecha_postergado TIMESTAMP NULL,
+    datos_solucion TEXT NULL,
+    tiempo_aplicado_solucion INTEGER NULL,
+    contacto_crea_incidencia VARCHAR(150) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_incidencias_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+);
+
 -- Tabla de logs de auditoría
 CREATE TABLE IF NOT EXISTS logs_auditoria (
     id SERIAL PRIMARY KEY,
@@ -235,6 +254,12 @@ CREATE INDEX IF NOT EXISTS idx_kpis_aplicacion ON kpis(aplicacion_id);
 CREATE INDEX IF NOT EXISTS idx_kpis_json_kpis ON kpis USING GIN (json_kpis);
 CREATE INDEX IF NOT EXISTS idx_kpis_json_mapper ON kpis USING GIN (json_mapper);
 
+-- Índices para incidencias
+CREATE INDEX IF NOT EXISTS idx_incidencias_cliente ON incidencias(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_incidencias_estado ON incidencias(estado);
+CREATE INDEX IF NOT EXISTS idx_incidencias_prioridad ON incidencias(prioridad);
+CREATE INDEX IF NOT EXISTS idx_incidencias_fecha_crea ON incidencias(fecha_crea_incidencia);
+
 -- Índices para logs
 CREATE INDEX IF NOT EXISTS idx_logs_usuario ON logs_auditoria(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_logs_cliente ON logs_auditoria(cliente_id);
@@ -307,6 +332,9 @@ CREATE TRIGGER update_aplicaciones_updated_at BEFORE UPDATE ON aplicaciones FOR 
 
 DROP TRIGGER IF EXISTS update_configuraciones_sistema_updated_at ON configuraciones_sistema;
 CREATE TRIGGER update_configuraciones_sistema_updated_at BEFORE UPDATE ON configuraciones_sistema FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_incidencias_updated_at ON incidencias;
+CREATE TRIGGER update_incidencias_updated_at BEFORE UPDATE ON incidencias FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Función para crear cliente completo
 CREATE OR REPLACE FUNCTION sp_crear_cliente(

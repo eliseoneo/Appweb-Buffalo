@@ -1,511 +1,558 @@
 'use client'
 
-import { useState } from 'react'
-import { 
-  AlertTriangle, 
-  Eye, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
-  Search,
-  User,
-  Calendar,
-  Download,
-  X
-} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 
 interface Incidencia {
-  id: string
-  titulo: string
+  id: number
+  cliente_id: number
+  cliente_nombre: string
+  fecha_crea_incidencia: string
+  estado: string
   descripcion: string
-  prioridad: 'Alta' | 'Media' | 'Baja'
-  estado: 'Abierto' | 'En Progreso' | 'Resuelto'
-  cliente: string
-  fechaCreacion: string
-  fechaActualizacion: string
-  asignadoA?: string
-  tieneArchivo?: boolean
-  archivo?: string
+  prioridad?: string | null
+  fecha_resolucion?: string | null
+  fecha_postergado?: string | null
+  datos_solucion?: string | null
+  tiempo_aplicado_solucion?: number | null
+  contacto_crea_incidencia?: string | null
+}
+
+interface ClienteItem {
+  id: string
+  nombreEmpresa: string
 }
 
 export default function AdminIncidenciasPage() {
-  const [incidencias, setIncidencias] = useState<Incidencia[]>([
-    {
-      id: 'INC-001',
-      titulo: 'Error en dashboard de llamadas',
-      descripcion: 'Los gráficos no cargan correctamente en TechCorp. Se muestra una pantalla en blanco cuando el usuario intenta acceder a las métricas de llamadas diarias.',
-      prioridad: 'Alta',
-      estado: 'En Progreso',
-      cliente: 'TechCorp Solutions',
-      fechaCreacion: '2024-01-15',
-      fechaActualizacion: '2024-01-16',
-      asignadoA: 'Equipo Técnico',
-      tieneArchivo: true,
-      archivo: 'captura_error_dashboard.png'
-    },
-    {
-      id: 'INC-002',
-      titulo: 'Problema de autenticación',
-      descripcion: 'El cliente no puede acceder a su panel de control. Aparece un mensaje de error 401 cuando intenta hacer login con sus credenciales correctas.',
-      prioridad: 'Alta',
-      estado: 'Abierto',
-      cliente: 'InnovaCorp',
-      fechaCreacion: '2024-01-14',
-      fechaActualizacion: '2024-01-14',
-      tieneArchivo: false
-    },
-    {
-      id: 'INC-003',
-      titulo: 'Solicitud de nueva funcionalidad',
-      descripcion: 'Cliente solicita exportar datos en Excel. Necesita poder descargar reportes mensuales de llamadas y métricas en formato .xlsx para análisis interno.',
-      prioridad: 'Media',
-      estado: 'Resuelto',
-      cliente: 'TechCorp Solutions',
-      fechaCreacion: '2024-01-10',
-      fechaActualizacion: '2024-01-13',
-      asignadoA: 'Desarrollo',
-      tieneArchivo: true,
-      archivo: 'especificaciones_excel_export.pdf'
-    }
-  ])
+  const [incidencias, setIncidencias] = useManagerState<Incidencia[]>([])
+  const [clientes, setClientes] = useManagerState<ClienteItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
+  // Filters
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterEstado, setFilterEstado] = useState('Todos')
-  const [filterPrioridad, setFilterPrioridad] = useState('Todas')
-  const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null)
+  const [clienteFilter, setClienteFilter] = useState<string>('')
+  const [estadoFilter, setEstadoFilter] = useState<string>('')
 
-  const getPrioridadColor = (prioridad: string) => {
-    switch (prioridad) {
-      case 'Alta':
-        return 'bg-red-100 text-red-800 border-red-200'
-      case 'Media':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'Baja':
-        return 'bg-green-100 text-green-800 border-green-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'Abierto':
-        return 'bg-red-100 text-red-800 border-red-200'
-      case 'En Progreso':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'Resuelto':
-        return 'bg-green-100 text-green-800 border-green-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const getEstadoIcon = (estado: string) => {
-    switch (estado) {
-      case 'Abierto':
-        return <XCircle className="h-4 w-4" />
-      case 'En Progreso':
-        return <Clock className="h-4 w-4" />
-      case 'Resuelto':
-        return <CheckCircle className="h-4 w-4" />
-      default:
-        return <AlertTriangle className="h-4 w-4" />
-    }
-  }
-
-  const filteredIncidencias = incidencias.filter(inc => {
-    const matchesSearch = inc.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         inc.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         inc.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesEstado = filterEstado === 'Todos' || inc.estado === filterEstado
-    const matchesPrioridad = filterPrioridad === 'Todas' || inc.prioridad === filterPrioridad
-    
-    return matchesSearch && matchesEstado && matchesPrioridad
+  // Form state (create new)
+  const [form, setForm] = useState({
+    clienteId: '',
+    estado: 'abierta',
+    prioridad: 'media',
+    descripcion: '',
+    contacto: ''
   })
+  const [submitting, setSubmitting] = useState(false)
+  const [submitMsg, setSubmitMsg] = useState('')
 
-  const estadisticas = {
-    total: incidencias.length,
-    abiertas: incidencias.filter(i => i.estado === 'Abierto').length,
-    enProgreso: incidencias.filter(i => i.estado === 'En Progreso').length,
-    resueltas: incidencias.filter(i => i.estado === 'Resuelto').length
+  // Action modal state (cerrar / postergar)
+  const [actionOpen, setActionOpen] = useState(false)
+  const [actionMode, setActionMode] = useState<'cerrar' | 'postergar'>('cerrar')
+  const [actionRow, setActionRow] = useState<Incidencia | null>(null)
+  const [actionFecha, setActionFecha] = useState<string>('')
+  const [actionDatos, setActionDatos] = useState<string>('')
+  const [actionTiempo, setActionTiempo] = useState<string>('')
+
+  // Pagination & caching
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const cacheRef = (globalThis as any).__incidenciasCacheRef || { map: new Map<string, any>() }
+  ;(globalThis as any).__incidenciasCacheRef = cacheRef
+
+  useEffect(() => {
+    const fetchBase = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        // load clients
+        const cRes = await fetch('/api/clientes')
+        const cJson = await cRes.json()
+        if (cRes.ok && cJson.success) {
+          const items: ClienteItem[] = (cJson.clientes || []).map((c: any) => ({
+            id: String(c.id),
+            nombreEmpresa: c.nombreEmpresa || 'Sin nombre'
+          }))
+          items.sort((a: any, b: any) => a.nombreEmpresa.localeCompare(b.nombreEmpresa, 'es'))
+          setClientes(items)
+        }
+      } catch (e: any) {
+        setError(e?.message || 'Error cargando clientes')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchBase()
+  }, [])
+
+  const fetchIncidencias = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (clienteFilter) params.set('clienteId', clienteFilter)
+      if (estadoFilter) params.set('estado', estadoFilter)
+      if (debouncedSearch) params.set('q', debouncedSearch)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
+      const url = `/api/admin/incidencias?${params.toString()}`
+
+      // Simple in-memory cache with TTL
+      const cacheKey = url
+      const now = Date.now()
+      const cached = cacheRef.map.get(cacheKey)
+      const TTL = 30_000 // 30s
+      if (cached && (now - cached.ts) < TTL) {
+        setIncidencias(cached.data || [])
+        setTotal(cached.total || 0)
+        setTotalPages(cached.totalPages || 1)
+        setError(null)
+        return
+      }
+
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) {
+        setError(`Error cargando incidencias (${res.status})`)
+        setIncidencias([])
+        setTotal(0)
+        setTotalPages(1)
+        return
+      }
+      const json = await res.json().catch(() => null)
+      if (json && json.success) {
+        setIncidencias(json.data || [])
+        setTotal(json.total || 0)
+        setTotalPages(json.totalPages || 1)
+        setError(null)
+        cacheRef.map.set(cacheKey, { data: json.data || [], total: json.total || 0, totalPages: json.totalPages || 1, ts: now })
+      } else {
+        setError(json?.message || 'No se pudo cargar incidencias')
+        setIncidencias([])
+        setTotal(0)
+        setTotalPages(1)
+      }
+    } catch (e: any) {
+      console.error('fetchIncidencias error:', e)
+      setError(e?.message || 'Fallo de red cargando incidencias')
+      setIncidencias([])
+      setTotal(0)
+      setTotalPages(1)
+    }
   }
 
-  const handleViewDetail = (incidencia: Incidencia) => {
-    setSelectedIncidencia(incidencia)
-    setShowDetailModal(true)
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim())
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchTerm])
+
+  useEffect(() => {
+    fetchIncidencias()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteFilter, estadoFilter, page, pageSize, debouncedSearch])
+
+  // Reset to first page when filters/search change
+  useEffect(() => {
+    setPage(1)
+  }, [clienteFilter, estadoFilter, debouncedSearch])
+
+  const filtered = useMemo(() => incidencias, [incidencias])
+
+  const openActionModal = (row: Incidencia, mode: 'cerrar' | 'postergar') => {
+    setActionRow(row)
+    setActionMode(mode)
+    // Prefill date to now in local datetime-local format
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+    setActionFecha(local)
+    setActionDatos('')
+    setActionTiempo('')
+    setActionOpen(true)
   }
 
-  const handleChangeEstado = (incidenciaId: string, nuevoEstado: 'Abierto' | 'En Progreso' | 'Resuelto') => {
-    setIncidencias(prev => prev.map(inc => 
-      inc.id === incidenciaId 
-        ? { ...inc, estado: nuevoEstado, fechaActualizacion: new Date().toISOString().split('T')[0] }
-        : inc
-    ))
+  const submitAction = async () => {
+    if (!actionRow) return
+    try {
+      const tiempo = actionTiempo ? parseInt(actionTiempo, 10) : null
+      const body: any = {
+        estado: actionMode === 'cerrar' ? 'cerrada' : 'postergada',
+        datosSolucion: actionDatos || null,
+        tiempoAplicadoSolucion: Number.isFinite(tiempo as any) ? tiempo : null
+      }
+      if (actionMode === 'cerrar') {
+        body.fechaResolucion = actionFecha || null
+      } else {
+        body.fechaPostergado = actionFecha || null
+      }
+
+      const res = await fetch(`/api/admin/incidencias/${actionRow.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'No se pudo actualizar la incidencia')
+      }
+      setActionOpen(false)
+      setActionRow(null)
+      await fetchIncidencias()
+    } catch (e: any) {
+      alert(e?.message || 'Error actualizando incidencia')
+    }
   }
 
-  const handleDownloadFile = (archivo: string) => {
-    // Simular descarga del archivo
-    console.log('Descargando archivo:', archivo)
-    // En producción aquí se haría la descarga real
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setSubmitMsg('')
+    try {
+      const res = await fetch('/api/admin/incidencias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clienteId: form.clienteId || clienteFilter || clientes[0]?.id,
+          estado: form.estado || 'abierta',
+          descripcion: form.descripcion,
+          prioridad: form.prioridad,
+          contactoCreaIncidencia: form.contacto || null
+        })
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.message || 'Error al crear incidencia')
+      setSubmitMsg('Incidencia creada')
+      setForm(f => ({ ...f, descripcion: '' }))
+      await fetchIncidencias()
+    } catch (err: any) {
+      console.error(err)
+      setSubmitMsg(err?.message || 'Error al crear incidencia')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 h-32 flex items-center px-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Incidencias</h1>
-          <p className="text-gray-600 mt-1">
-            Gestiona incidencias y tickets de soporte de clientes
-          </p>
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Incidencias</h1>
+            <p className="text-gray-600 mt-1">Gestión de incidencias por cliente</p>
+          </div>
+          <Link href="/admin" className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm">
+            ← Volver al dashboard
+          </Link>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-8 py-8">
-        {/* Search Bar with Filters */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
-            <div className="relative flex-1 max-w-2xl">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por título, cliente o ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
-              />
-            </div>
-            
-            <div className="flex gap-4">
-              <select
-                value={filterEstado}
-                onChange={(e) => setFilterEstado(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buffalo-green focus:border-transparent bg-white text-gray-900"
-              >
-                <option value="Todos">Todos los estados</option>
-                <option value="Abierto">Abierto</option>
-                <option value="En Progreso">En Progreso</option>
-                <option value="Resuelto">Resuelto</option>
-              </select>
-              
-              <select
-                value={filterPrioridad}
-                onChange={(e) => setFilterPrioridad(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-buffalo-green focus:border-transparent bg-white text-gray-900"
-              >
-                <option value="Todas">Todas las prioridades</option>
-                <option value="Alta">Alta</option>
-                <option value="Media">Media</option>
-                <option value="Baja">Baja</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Incidencias</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{estadisticas.total}</p>
-              </div>
-              <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Abiertas</p>
-                <p className="text-3xl font-bold text-red-600 mt-2">{estadisticas.abiertas}</p>
-              </div>
-              <div className="h-12 w-12 bg-red-100 rounded-xl flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">En Progreso</p>
-                <p className="text-3xl font-bold text-yellow-600 mt-2">{estadisticas.enProgreso}</p>
-              </div>
-              <div className="h-12 w-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Resueltas</p>
-                <p className="text-3xl font-bold text-green-600 mt-2">{estadisticas.resueltas}</p>
-              </div>
-              <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-
-        {/* Incidencias List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Incidencias ({filteredIncidencias.length})
-          </h2>
-          
-          {filteredIncidencias.length === 0 ? (
-            <div className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No se encontraron incidencias</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredIncidencias.map((incidencia) => (
-                <div key={incidencia.id} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">{incidencia.titulo}</h3>
-                        <span className="text-sm text-gray-500">#{incidencia.id}</span>
-                        {incidencia.tieneArchivo && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                            📎 Archivo
-                          </span>
-                        )}
-                      </div>
-                      
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                        {incidencia.descripcion}
-                      </p>
-                      
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600">{incidencia.cliente}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600">{incidencia.fechaCreacion}</span>
-                        </div>
-                        
-                        {incidencia.asignadoA && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-600">Asignado: {incidencia.asignadoA}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 ml-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPrioridadColor(incidencia.prioridad)}`}>
-                        {incidencia.prioridad}
-                      </span>
-                      
-                      {/* Estado con botones para cambiar */}
-                      <div className="flex gap-2">
-                        {(['Abierto', 'En Progreso', 'Resuelto'] as const).map((estado) => (
-                          <button
-                            key={estado}
-                            onClick={() => handleChangeEstado(incidencia.id, estado)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                              incidencia.estado === estado
-                                ? getEstadoColor(estado)
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-300'
-                            }`}
-                          >
-                            {estado}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      {/* Botones de acción */}
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => handleViewDetail(incidencia)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Ver detalles"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        
-                        {incidencia.tieneArchivo && (
-                          <button 
-                            onClick={() => handleDownloadFile(incidencia.archivo!)}
-                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Descargar archivo"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-
-      {/* Detail Modal */}
-      {showDetailModal && selectedIncidencia && (
+      {/* Action Modal (Cerrar/Postergar) */}
+      {actionOpen && actionRow && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-8">
-          <div 
+          <div
             className="absolute inset-0 bg-black bg-opacity-50"
-            onClick={() => setShowDetailModal(false)}
+            onClick={() => setActionOpen(false)}
           ></div>
-          
-          <div className="relative bg-white rounded-xl shadow-lg p-8 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Eye className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Detalles de la Incidencia</h2>
-                  <p className="text-sm text-gray-500">ID: {selectedIncidencia.id}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowDetailModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+          <div className="relative bg-white rounded-xl shadow-lg p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {actionMode === 'cerrar' ? 'Cerrar incidencia' : 'Postergar incidencia'} #{actionRow.id}
+            </h3>
 
-            <div className="space-y-6">
-              {/* Título y Estado */}
+            <div className="space-y-4">
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">{selectedIncidencia.titulo}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getEstadoColor(selectedIncidencia.estado)}`}>
-                      {getEstadoIcon(selectedIncidencia.estado)}
-                      {selectedIncidencia.estado}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPrioridadColor(selectedIncidencia.prioridad)}`}>
-                      {selectedIncidencia.prioridad}
-                    </span>
-                  </div>
-                </div>
+                <label className="block text-sm text-gray-700 mb-1">
+                  {actionMode === 'cerrar' ? 'Fecha de cierre' : 'Fecha de postergación'}
+                </label>
+                <input
+                  type="datetime-local"
+                  value={actionFecha}
+                  onChange={(e) => setActionFecha(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+                />
               </div>
 
-              {/* Información del cliente */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Cliente</h4>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <User className="h-4 w-4" />
-                    <span>{selectedIncidencia.cliente}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Asignado a</h4>
-                  <div className="text-gray-600">
-                    {selectedIncidencia.asignadoA || 'Sin asignar'}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Fecha de creación</h4>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>{selectedIncidencia.fechaCreacion}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Última actualización</h4>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Clock className="h-4 w-4" />
-                    <span>{selectedIncidencia.fechaActualizacion}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Descripción */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Descripción</h4>
-                <p className="text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-lg">
-                  {selectedIncidencia.descripcion}
-                </p>
+                <label className="block text-sm text-gray-700 mb-1">
+                  {actionMode === 'cerrar' ? 'Solución (opcional)' : 'Nota (opcional)'}
+                </label>
+                <textarea
+                  value={actionDatos}
+                  onChange={(e) => setActionDatos(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+                  placeholder={actionMode === 'cerrar' ? 'Describe brevemente la solución aplicada' : 'Describe por qué se posterga'}
+                />
               </div>
 
-              {/* Archivo adjunto */}
-              {selectedIncidencia.tieneArchivo && (
+              {actionMode === 'cerrar' && (
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Archivo adjunto</h4>
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        📎
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{selectedIncidencia.archivo}</p>
-                        <p className="text-sm text-gray-500">Archivo adjunto</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDownloadFile(selectedIncidencia.archivo!)}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <Download className="h-4 w-4" />
-                      Descargar
-                    </button>
-                  </div>
+                  <label className="block text-sm text-gray-700 mb-1">Tiempo aplicado (minutos, opcional)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={actionTiempo}
+                    onChange={(e) => setActionTiempo(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+                    placeholder="0"
+                  />
                 </div>
               )}
+            </div>
 
-              {/* Cambiar estado */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Cambiar estado</h4>
-                <div className="flex gap-3">
-                  {(['Abierto', 'En Progreso', 'Resuelto'] as const).map((estado) => (
-                    <button
-                      key={estado}
-                      onClick={() => {
-                        handleChangeEstado(selectedIncidencia.id, estado)
-                        setSelectedIncidencia({ ...selectedIncidencia, estado })
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                        selectedIncidencia.estado === estado
-                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
-                      }`}
-                    >
-                      {getEstadoIcon(estado)}
-                      {estado}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Botón de cerrar */}
-              <div className="flex justify-end pt-4">
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                >
-                  Cerrar
-                </button>
-              </div>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setActionOpen(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={submitAction}
+                className={`px-4 py-2 rounded-lg ${actionMode === 'cerrar' ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'} text-white`}
+              >
+                {actionMode === 'cerrar' ? 'Confirmar cierre' : 'Confirmar postergación'}
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Content */}
+      <div className="px-8 py-8 space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">
+            {error}
+          </div>
+        )}
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input
+              type="text"
+              placeholder="Buscar (cliente, estado, prioridad, descripción)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+            />
+            <select
+              value={clienteFilter}
+              onChange={(e) => setClienteFilter(e.target.value)}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+            >
+              <option value="">Todos los clientes</option>
+              {clientes.map(c => (
+                <option key={c.id} value={c.id}>{c.nombreEmpresa}</option>
+              ))}
+            </select>
+            <select
+              value={estadoFilter}
+              onChange={(e) => setEstadoFilter(e.target.value)}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+            >
+              <option value="">Todos los estados</option>
+              <option value="abierta">Abierta</option>
+              <option value="en_progreso">En Progreso</option>
+              <option value="postergada">Postergada</option>
+              <option value="resuelta">Resuelta</option>
+              <option value="cerrada">Cerrada</option>
+            </select>
+            <button
+              onClick={() => { setClienteFilter(''); setEstadoFilter(''); setSearchTerm('') }}
+              className="px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
+
+        {/* Create Form */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Crear Incidencia</h2>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+            <select
+              value={form.clienteId || clienteFilter}
+              onChange={(e) => setForm(f => ({ ...f, clienteId: e.target.value }))}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+              required
+            >
+              <label />
+              <option value="">Seleccionar cliente</option>
+              {clientes.map(c => (
+                <option key={c.id} value={c.id}>{c.nombreEmpresa}</option>
+              ))}
+            </select>
+            <select
+              value={form.estado}
+              onChange={(e) => setForm(f => ({ ...f, estado: e.target.value }))}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+              required
+            >
+              <option value="abierta">Abierta</option>
+              <option value="en_progreso">En Progreso</option>
+              <option value="postergada">Postergada</option>
+              <option value="resuelta">Resuelta</option>
+              <option value="cerrada">Cerrada</option>
+            </select>
+            <select
+              value={form.prioridad}
+              onChange={(e) => setForm(f => ({ ...f, prioridad: e.target.value }))}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+            >
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+              <option value="critica">Crítica</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Contacto (opcional)"
+              value={form.contacto}
+              onChange={(e) => setForm(f => ({ ...f, contacto: e.target.value }))}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+            />
+            <textarea
+              placeholder="Descripción de la incidencia"
+              value={form.descripcion}
+              onChange={(e) => setForm(f => ({ ...f, descripcion: e.target.value }))}
+              className="md:col-span-3 w-full px-3 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+              required
+            />
+            <div className="md:col-span-4 flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              >
+                {submitting ? 'Creando...' : 'Crear incidencia'}
+              </button>
+              {submitMsg && <span className="text-sm text-gray-600">{submitMsg}</span>}
+            </div>
+          </form>
+        </div>
+
+        {/* List */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Top toolbar */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-gray-50 text-sm text-gray-700">
+            <div>
+              {total > 0 ? (
+                <span>
+                  Página {page} de {totalPages} · {total} registros
+                </span>
+              ) : (
+                <span>Sin resultados</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Filas por página</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+                className="px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-buffalo-green focus:border-transparent"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prioridad</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filtered.map(i => (
+                  <tr key={i.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(i.fecha_crea_incidencia).toLocaleString('es-ES')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{i.cliente_nombre}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs ${i.estado === 'resuelta' || i.estado === 'cerrada' ? 'bg-green-100 text-green-800' : i.estado === 'en_progreso' ? 'bg-blue-100 text-blue-800' : i.estado === 'postergada' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                        {i.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{i.prioridad || '-'}</td>
+                    <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-700 max-w-3xl">{i.descripcion}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        {(i.estado === 'cerrada' || i.estado === 'resuelta') ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => openActionModal(i, 'cerrar')}
+                              className="px-3 py-1 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700"
+                              title="Cerrar incidencia"
+                            >
+                              Cerrar
+                            </button>
+                            <button
+                              onClick={() => openActionModal(i, 'postergar')}
+                              className="px-3 py-1 rounded-lg text-xs font-medium bg-yellow-600 text-white hover:bg-yellow-700"
+                              title="Postergar incidencia"
+                            >
+                              Postergar
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination controls */}
+          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="text-sm text-gray-700">
+              {total > 0 && (
+                <span>
+                  Mostrando {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, total)} de {total}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-gray-700">Página {page} de {totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="px-3 py-1 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+          {filtered.length === 0 && (
+            <div className="p-8 text-center text-gray-500">No hay incidencias para los filtros seleccionados.</div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
+
+function useManagerState<T>(initial: T) {
+  const [v, setV] = useState<T>(initial)
+  return [v, setV] as const
+}
+
+
