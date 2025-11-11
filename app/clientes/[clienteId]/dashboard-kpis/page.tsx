@@ -85,8 +85,45 @@ export default function DashboardKPIsPage() {
           console.log('🎨 Design variant loaded:', variant)
           console.log('🎨 Personalizacion:', data.cliente.personalizacion)
 
-          // Data ingestion removed - should be triggered manually or by webhook
-          // to avoid duplicate data on every dashboard load
+          // Conditionally trigger data ingestion only if there's no data yet
+          // - In development: use local mapper file from C:\TestMapperBufalo\<archivo_mapper>.json
+          // - In production: call webhook via ingest API (no testPath)
+          if (!ingestTriggeredRef.current) {
+            ingestTriggeredRef.current = true
+            try {
+              const isDev = process.env.NODE_ENV !== 'production'
+
+              // First check if there is already data
+              const checkRes = await fetch(`/api/n8n-dashboard/data?clienteId=${clienteId}`, { cache: 'no-store' })
+
+              if (!checkRes.ok) {
+                // No data yet -> trigger ingest
+                console.log('🚀 No data found. Triggering data ingest for cliente', clienteId)
+
+                const body: any = {}
+                if (isDev && data.cliente.archivoMapper) {
+                  // Build Windows path for local testing mappers
+                  const mapperFile = `${data.cliente.archivoMapper}.json`
+                  body.testPath = `C:\\\\TestMapperBufalo\\\\${mapperFile}`
+                  console.log('🧪 Using local mapper file for ingest:', body.testPath)
+                } else {
+                  console.log('🌐 Using webhook_url for ingest (production mode or no archivoMapper)')
+                }
+
+                const ingestRes = await fetch(`/api/clientes/${clienteId}/ingest`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(body)
+                })
+                const ingestData = await ingestRes.json().catch(() => ({}))
+                console.log('✅ Ingest result:', ingestData)
+              } else {
+                console.log('✅ Data already present, skipping ingest.')
+              }
+            } catch (ingErr) {
+              console.warn('⚠️ Ingest check/trigger failed (continuing):', ingErr)
+            }
+          }
           
           // Always create cliente object from API data (prefer API over static config)
           const clienteFromAPI: ClienteConfig = {

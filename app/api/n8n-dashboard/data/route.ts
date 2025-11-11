@@ -6,40 +6,50 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const clienteId = searchParams.get('clienteId') || '13' // Default to cliente 13 for n8n-dashboard
     
-    // Find the client's table
-    const tablesResult = await query(`
-      SELECT DISTINCT c1.table_name
-      FROM information_schema.columns c1
-      WHERE c1.table_schema = 'public'
-        AND c1.column_name = 'cliente_id'
-        AND EXISTS (
-          SELECT 1
-          FROM information_schema.columns c2
-          WHERE c2.table_schema = 'public'
-            AND c2.table_name = c1.table_name
-            AND c2.column_name = 'payload'
-            AND c2.data_type = 'jsonb'
-        )
-      ORDER BY c1.table_name
-    `)
-    
-    // Check each table to find one with data for this client
-    let tableName = null
-    for (const row of tablesResult.rows) {
-      try {
-        const checkResult = await query(`
-          SELECT COUNT(*) as count
-          FROM ${row.table_name}
-          WHERE cliente_id = $1
-        `, [clienteId])
-        
-        if (parseInt(checkResult.rows[0].count) > 0) {
-          tableName = row.table_name
-          break
+    // Prefer explicit mapping on clientes.tabla_cliente
+    await query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS tabla_cliente VARCHAR(250)`)
+    const tRes = await query(`SELECT tabla_cliente FROM clientes WHERE id = $1`, [clienteId])
+    let tableName: string | null = tRes.rows?.[0]?.tabla_cliente || null
+
+    if (!tableName) {
+      // Discover candidate tables
+      const tablesResult = await query(`
+        SELECT DISTINCT c1.table_name
+        FROM information_schema.columns c1
+        WHERE c1.table_schema = 'public'
+          AND c1.column_name = 'cliente_id'
+          AND EXISTS (
+            SELECT 1
+            FROM information_schema.columns c2
+            WHERE c2.table_schema = 'public'
+              AND c2.table_name = c1.table_name
+              AND c2.column_name = 'payload'
+              AND c2.data_type = 'jsonb'
+          )
+        ORDER BY c1.table_name
+      `)
+      
+      // Check each table to find one with data for this client
+      for (const row of tablesResult.rows) {
+        try {
+          const checkResult = await query(`
+            SELECT COUNT(*) as count
+            FROM ${row.table_name}
+            WHERE cliente_id = $1
+          `, [clienteId])
+          
+          if (parseInt(checkResult.rows[0].count) > 0) {
+            tableName = row.table_name
+            // Persist mapping for faster future lookups
+            try {
+              await query(`UPDATE clientes SET tabla_cliente = $1 WHERE id = $2`, [tableName, clienteId])
+            } catch {}
+            break
+          }
+        } catch (e) {
+          // Table might not exist or have wrong structure, continue
+          continue
         }
-      } catch (e) {
-        // Table might not exist or have wrong structure, continue
-        continue
       }
     }
     

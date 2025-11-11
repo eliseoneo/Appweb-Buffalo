@@ -26,6 +26,29 @@ async function getFieldMapping(clienteId: string, tableName: string): Promise<{ 
 // Helper function to find client's table name
 async function findClientTable(clienteId: string): Promise<string | null> {
   try {
+    // Prefer explicit mapping on clientes.tabla_cliente
+    try {
+      // Ensure column exists (safe if already exists)
+      await query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS tabla_cliente VARCHAR(250)`)
+      const tRes = await query(`SELECT tabla_cliente FROM clientes WHERE id = $1`, [clienteId])
+      const tabla = tRes.rows?.[0]?.tabla_cliente
+      if (tabla) {
+        // Verify table exists
+        const existsRes = await query(
+          `SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_name = $1
+          ) AS exists`,
+          [tabla]
+        )
+        if (existsRes.rows?.[0]?.exists) {
+          return tabla
+        }
+      }
+    } catch (e) {
+      // fallback to discovery
+    }
+
     // Find all tables that have both cliente_id and payload (JSONB) columns
     const tablesResult = await query(`
       SELECT DISTINCT c1.table_name
@@ -98,31 +121,45 @@ export async function GET(request: Request) {
     const mapping = await getFieldMapping(clienteId, tableName)
     console.log(`📋 Field mapping available:`, !!mapping)
 
-    // Fetch KPI definitions first to know what to calculate
-    const kpisResult = await query(`
-      SELECT kpis 
-      FROM public.crear_kpis 
-      WHERE kpis IS NOT NULL
-      LIMIT 1
-    `)
-
-    // If we have kpis_mapping from the mapper file, use that instead of crear_kpis
+    // Fetch KPI definitions - prioritize client-specific KPIs
     let kpiDefinitions: any[] = []
-    if (mapping?.kpisMapping?.kpis) {
-      // Use kpis from mapper file
+    
+    // First, try to get client-specific KPIs from kpis table
+    const clientKpisResult = await query(`
+      SELECT json_kpis 
+      FROM kpis 
+      WHERE cliente_id = $1
+      LIMIT 1
+    `, [clienteId])
+    
+    if (clientKpisResult.rows.length > 0 && clientKpisResult.rows[0].json_kpis?.kpis) {
+      // Use client-specific KPIs
+      kpiDefinitions = clientKpisResult.rows[0].json_kpis.kpis.filter((kpi: any) => kpi.activo !== false)
+      console.log(`✅ Using ${kpiDefinitions.length} KPIs from client-specific kpis table`)
+    } else if (mapping?.kpisMapping?.kpis) {
+      // Use kpis from mapper file if available
       kpiDefinitions = mapping.kpisMapping.kpis.filter((kpi: any) => kpi.activo !== false)
       console.log(`✅ Using ${kpiDefinitions.length} KPIs from mapper file`)
-    } else if (kpisResult.rows.length > 0 && kpisResult.rows[0].kpis) {
-      // Fallback to crear_kpis table
-      const kpisArray = kpisResult.rows[0].kpis
-      kpiDefinitions = kpisArray.map((kpiString: string) => {
-        try {
-          return JSON.parse(kpiString)
-        } catch (e) {
-          return null
-        }
-      }).filter((kpi: any) => kpi !== null)
-      console.log(`✅ Using ${kpiDefinitions.length} KPIs from crear_kpis table`)
+    } else {
+      // Final fallback to crear_kpis table
+      const kpisResult = await query(`
+        SELECT kpis 
+        FROM public.crear_kpis 
+        WHERE kpis IS NOT NULL
+        LIMIT 1
+      `)
+      
+      if (kpisResult.rows.length > 0 && kpisResult.rows[0].kpis) {
+        const kpisArray = kpisResult.rows[0].kpis
+        kpiDefinitions = kpisArray.map((kpiString: string) => {
+          try {
+            return JSON.parse(kpiString)
+          } catch (e) {
+            return null
+          }
+        }).filter((kpi: any) => kpi !== null)
+        console.log(`✅ Using ${kpiDefinitions.length} KPIs from crear_kpis table (fallback)`)
+      }
     }
 
     if (kpiDefinitions.length === 0) {
@@ -165,17 +202,37 @@ export async function GET(request: Request) {
 
 // Helper function to get field name from mapping
 function getFieldNameFromMapping(kpiDef: any, mapping: { fieldMapping: any, kpisMapping: any } | null): string | null {
-  if (!mapping?.kpisMapping?.kpis) return null
+  if (!mapping?.kpisMapping) return null
   
-  // Find the KPI in the mapping
-  const kpiMapping = mapping.kpisMapping.kpis.find((k: any) => 
-    k.kpi_id === kpiDef.kpi_id || 
-    k.titulo === kpiDef.titulo ||
-    k.kpi_titulo === kpiDef.titulo
-  )
+  const kpiTitle = kpiDef.titulo || kpiDef.kpi_titulo || ''
   
-  if (kpiMapping?.columnas_origen && kpiMapping.columnas_origen.length > 0) {
-    return kpiMapping.columnas_origen[0] // Use first column
+  // Check if kpisMapping is a direct key-value mapping (new format)
+  if (typeof mapping.kpisMapping === 'object' && !Array.isArray(mapping.kpisMapping) && !mapping.kpisMapping.kpis) {
+    // Direct mapping: KPI title -> field name
+    const fieldName = mapping.kpisMapping[kpiTitle]
+    if (fieldName) {
+      console.log(`✅ Found direct mapping: "${kpiTitle}" → "${fieldName}"`)
+      return fieldName
+    }
+  }
+  
+  // Old format with kpis array
+  if (mapping.kpisMapping.kpis && Array.isArray(mapping.kpisMapping.kpis)) {
+    const kpiMapping = mapping.kpisMapping.kpis.find((k: any) => 
+      k.kpi_id === kpiDef.kpi_id || 
+      k.titulo === kpiTitle ||
+      k.kpi_titulo === kpiTitle
+    )
+    
+    if (kpiMapping?.columnas_origen && kpiMapping.columnas_origen.length > 0) {
+      return kpiMapping.columnas_origen[0] // Use first column
+    }
+  }
+  
+  // Try using inputs field from kpiDef as fallback
+  if (kpiDef.inputs && Array.isArray(kpiDef.inputs) && kpiDef.inputs.length > 0) {
+    console.log(`⚠️ Using inputs field as fallback: "${kpiTitle}" → "${kpiDef.inputs[0]}"`)
+    return kpiDef.inputs[0]
   }
   
   return null
@@ -229,7 +286,16 @@ async function calculateKPI(
     // Handle based on chart type and field type
     if (tipo_grafico === 'individual') {
       // Individual metrics - get single value
-      if (fieldType === 'INTEGER' || fieldType === 'NUMERIC') {
+      const normalizedType = String(fieldType).toUpperCase()
+      const isNumericType =
+        normalizedType.includes('INT') ||
+        normalizedType.includes('NUMERIC') ||
+        normalizedType.includes('DECIMAL') ||
+        normalizedType.includes('REAL') ||
+        normalizedType.includes('DOUBLE') ||
+        normalizedType.includes('FLOAT')
+
+      if (isNumericType) {
         const result = await query(`
           SELECT AVG((payload->>$2)::numeric) as avg_value,
                  SUM((payload->>$2)::numeric) as sum_value
@@ -252,13 +318,31 @@ async function calculateKPI(
           }
           return { valor: avgValue.toLocaleString('es-ES') }
         }
+      } else if (normalizedType === 'JSONB') {
+        // Attempt to extract numeric value from nested { "valor": number } or direct scalar
+        const result = await query(`
+          SELECT 
+            SUM(
+              CASE 
+                WHEN jsonb_typeof(payload->$2) = 'object' THEN NULLIF((payload->$2->>'valor'), '')::numeric
+                WHEN jsonb_typeof(payload->$2) IN ('number','string') THEN NULLIF((payload->>$2), '')::numeric
+                ELSE NULL
+              END
+            ) as sum_value
+          FROM ${tableName}
+          WHERE cliente_id = $1
+        `, [clienteId, fieldName])
+
+        const sumValue = parseFloat(result.rows[0]?.sum_value) || 0
+
+        return { valor: sumValue.toLocaleString('es-ES') }
       } else {
-        // For other types, just count records
+        // Fallback: count records
         return { valor: totalRows.toLocaleString('es-ES') }
       }
     } else if (tipo_grafico === 'linea') {
       // Line chart - need date-based data
-      if (fieldType === 'JSONB' && fieldName.includes('fecha_hora')) {
+      if (fieldType === 'JSONB' && (fieldName.includes('fecha') || fieldName.includes('date'))) {
         // Handle JSONB object like {"19/09/2025": 10, "20/09/2025": 8}
         // Aggregate across all records
         const result = await query(`

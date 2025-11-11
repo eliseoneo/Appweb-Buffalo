@@ -23,6 +23,8 @@ export async function GET(
     
     if (isValidNumber) {
       console.log('🔍 Querying as INTEGER:', idAsNumber)
+      // Ensure tabla_cliente column exists
+      await pool.query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS tabla_cliente VARCHAR(250)`)
       result = await pool.query(
         `SELECT 
           c.id,
@@ -31,6 +33,8 @@ export async function GET(
           c.activo,
           c.personalizacion,
           c.webhook_url,
+          c.tabla_cliente,
+          c.archivo_mapper,
           u.username,
           p.id as partnership_id,
           p.nombre as partnership_nombre
@@ -43,6 +47,7 @@ export async function GET(
     } else {
       // If not a valid number, try as text (for UUIDs if they exist)
       console.log('🔍 Querying as TEXT:', String(id))
+      await pool.query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS tabla_cliente VARCHAR(250)`)
       result = await pool.query(
         `SELECT 
           c.id,
@@ -51,6 +56,8 @@ export async function GET(
           c.activo,
           c.personalizacion,
           c.webhook_url,
+          c.tabla_cliente,
+          c.archivo_mapper,
           u.username,
           p.id as partnership_id,
           p.nombre as partnership_nombre
@@ -94,6 +101,8 @@ export async function GET(
         partnership_id: row.partnership_id || undefined,
         webhook_url: row.webhook_url || null,
         personalizacion: personalizacion,
+        tablaCliente: row.tabla_cliente || null,
+        archivoMapper: row.archivo_mapper || null,
         colorPrincipal: colorPrincipal
       }
     })

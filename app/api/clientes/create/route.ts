@@ -7,6 +7,10 @@ export async function POST(request: NextRequest) {
   
   try {
     await client.query('BEGIN')
+
+    // Ensure new column exists
+    await client.query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS tabla_cliente VARCHAR(250)`)
+    await client.query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS archivo_mapper VARCHAR(500)`)
     
     const body = await request.json()
     
@@ -84,9 +88,17 @@ export async function POST(request: NextRequest) {
       (typeof webhooksObj.webhookTextoDashboard === 'string' && webhooksObj.webhookTextoDashboard.trim() !== '' ? webhooksObj.webhookTextoDashboard.trim() : null) ??
       (typeof webhooksObj['webhookDashboard'] === 'string' && webhooksObj['webhookDashboard'].trim() !== '' ? webhooksObj['webhookDashboard'].trim() : null)
 
+    // Determine default table name for this cliente (sanitized from nombreEmpresa)
+    const defaultTablaCliente =
+      (body.nombreEmpresa || 'cliente_data')
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+
     const clienteResult = await client.query(
-      `INSERT INTO clientes (usuario_id, nombre_empresa, logo_empresa, tipo_cliente, partnership_id, personalizacion, webhook_url, activo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO clientes (usuario_id, nombre_empresa, logo_empresa, tipo_cliente, partnership_id, personalizacion, webhook_url, activo, tabla_cliente, archivo_mapper)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
       [
         usuarioId,
@@ -96,7 +108,9 @@ export async function POST(request: NextRequest) {
         partnershipId,
         body.personalizacion || null, // JSONB column accepts JavaScript objects directly
         dashboardWebhookUrl,
-        true
+        true,
+        body.tablaCliente || defaultTablaCliente,
+        body.archivoMapper || null
       ]
     )
     const clienteId = clienteResult.rows[0].id
@@ -291,13 +305,8 @@ export async function POST(request: NextRequest) {
     if (body.columnasPostgres && body.columnasPostgres.length > 0) {
       try {
         console.log('📊 Creando tabla para cliente...')
-        // Sanitize table name: replace spaces and invalid chars with underscores (no hyphens)
-        let tablaNombre = body.nombreEmpresa
-          ? body.nombreEmpresa.toLowerCase()
-              .replace(/\s+/g, '_')        // spaces -> underscore
-              .replace(/[^a-z0-9_]+/g, '_') // any non [a-z0-9_] -> underscore
-              .replace(/^_+|_+$/g, '')      // trim underscores
-          : 'cliente_data'
+        // Use the tabla_cliente we saved for the cliente
+        let tablaNombre = (body.tablaCliente || defaultTablaCliente)
         
         // Use unquoted sanitized name (valid SQL identifier)
         const tablaNombreQuoted = tablaNombre

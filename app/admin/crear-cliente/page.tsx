@@ -3354,6 +3354,9 @@ export default function CrearClientePage() {
       console.log('   - Después (color con valores hexadecimales):', personalizacionForDB.color)
       console.log('   - Variante de Diseño:', personalizacionForDB.designVariant)
 
+      // Derive archivoMapper base name from Step 6 naming convention
+      const mapperBaseName = `mapper-${(formData.nombreEmpresa || 'cliente').replace(/\s+/g, '-')}-${clienteId.substring(0, 8)}`
+
       const nuevoCliente = {
         id: clienteId,  // ✅ CAMBIO: Antes usaba Date.now(), ahora usa UUID
         nombreEmpresa: formData.nombreEmpresa,
@@ -3368,6 +3371,7 @@ export default function CrearClientePage() {
         columnasPostgres: formData.columnasPostgres,
         kpisGenerados: kpiData,  // ✅ Incluye: { cliente_id, timestamp, total_kpis, kpis: [...] }
         mapperJSON: mapperJSON,  // ✅ Mapper JSON content for kpis table
+        archivoMapper: mapperBaseName, // ✅ Guardar nombre del archivo mapper (sin extensión)
         estado: 'Activo',
         fechaCreacion: new Date().toISOString()
       }
