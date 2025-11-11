@@ -61,27 +61,57 @@ export async function GET() {
     )
 
     // Get performance metrics
-    // Total calls processed (if llamadas_data table exists, otherwise use metricas)
+    // Aggregate from latest resumen_cliente per active client
     let callsProcessed = 0
+    let avgResponseRate = 0
+    let avgWaitTimeSec = 0
     try {
-      const callsResult = await query(
-        `SELECT COUNT(*) as count 
-         FROM metricas 
-         WHERE tipo_metrica LIKE '%llamada%' OR tipo_metrica LIKE '%call%'`
-      )
-      callsProcessed = parseInt(callsResult.rows[0]?.count || '0')
-    } catch (error) {
-      // If metricas doesn't have call data, try to get from llamadas_data if it exists
-      try {
-        const llamadasResult = await query(
-          `SELECT COUNT(*) as count 
-           FROM llamadas_data 
-           WHERE llamada_realizada = true`
+      const perfRes = await query(`
+        WITH latest AS (
+          SELECT DISTINCT ON (m.cliente_id)
+            m.cliente_id,
+            m.metadata,
+            m.fecha_metrica
+          FROM metricas m
+          JOIN clientes c ON c.id = m.cliente_id
+          WHERE c.activo = TRUE
+            AND m.tipo_metrica = 'resumen_cliente'
+          ORDER BY m.cliente_id, m.fecha_metrica DESC
         )
-        callsProcessed = parseInt(llamadasResult.rows[0]?.count || '0')
+        SELECT 
+          COALESCE(AVG((latest.metadata->>'responseRate')::numeric), 0) AS avg_rr,
+          COALESCE(AVG((latest.metadata->>'avgWaitTime')::numeric), 0) AS avg_wait,
+          COALESCE(SUM((latest.metadata->>'totalCalls')::numeric), 0) AS total_calls
+        FROM latest
+      `)
+      avgResponseRate = parseFloat(perfRes.rows[0]?.avg_rr) || 0
+      avgWaitTimeSec = parseFloat(perfRes.rows[0]?.avg_wait) || 0
+      callsProcessed = Math.round(parseFloat(perfRes.rows[0]?.total_calls) || 0)
+
+      // Fallback if no resumen data found
+      if (callsProcessed === 0 && avgResponseRate === 0 && avgWaitTimeSec === 0) {
+        const callsResult = await query(
+          `SELECT COUNT(*) as count 
+           FROM metricas 
+           WHERE tipo_metrica LIKE '%llamada%' OR tipo_metrica LIKE '%call%'`
+        )
+        callsProcessed = parseInt(callsResult.rows[0]?.count || '0')
+      }
+    } catch (error) {
+      // Fallback path
+      try {
+        const callsResult = await query(
+          `SELECT COUNT(*) as count 
+           FROM metricas 
+           WHERE tipo_metrica LIKE '%llamada%' OR tipo_metrica LIKE '%call%'`
+        )
+        callsProcessed = parseInt(callsResult.rows[0]?.count || '0')
+        avgResponseRate = 0
+        avgWaitTimeSec = 0
       } catch (e) {
-        // Table might not exist, use default
         callsProcessed = 0
+        avgResponseRate = 0
+        avgWaitTimeSec = 0
       }
     }
 
@@ -140,7 +170,9 @@ export async function GET() {
         },
         recentActivity,
         performance: {
-          callsProcessed
+          callsProcessed,
+          avgResponseRate,
+          avgWaitTimeSec
         }
       }
     })

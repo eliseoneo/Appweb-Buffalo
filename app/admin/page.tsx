@@ -23,6 +23,8 @@ interface DashboardData {
   }>
   performance: {
     callsProcessed: number
+    avgResponseRate?: number
+    avgWaitTimeSec?: number
   }
 }
 
@@ -222,17 +224,17 @@ export default function AdminPage() {
               </div>
             </button>
 
-            <button className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            <Link href="/admin/metricas" className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
               <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
                 <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2z" />
                 </svg>
               </div>
               <div className="text-left">
                 <p className="font-medium text-gray-900">Ver Métricas</p>
                 <p className="text-sm text-gray-500">Analizar rendimiento</p>
               </div>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -301,11 +303,21 @@ export default function AdminPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Métricas de Rendimiento</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">98.5%</div>
-              <div className="text-sm text-gray-600">Uptime del Sistema</div>
+              {(() => {
+                const rr = typeof data.performance.avgResponseRate === 'number' ? data.performance.avgResponseRate : 0
+                const rrColor = rr >= 85 ? 'text-green-600' : rr >= 60 ? 'text-yellow-600' : 'text-red-600'
+                return (
+                  <div className={`text-3xl font-bold ${rrColor} mb-2`}>
+                    {`${rr.toFixed(1)}%`}
+                  </div>
+                )
+              })()}
+              <div className="text-sm text-gray-600">Efectividad Global (Tasa de Respuesta)</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-2">2.3s</div>
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                {typeof data.performance.avgWaitTimeSec === 'number' ? `${data.performance.avgWaitTimeSec.toFixed(1)}s` : '0.0s'}
+              </div>
               <div className="text-sm text-gray-600">Tiempo de Respuesta</div>
             </div>
             <div className="text-center">

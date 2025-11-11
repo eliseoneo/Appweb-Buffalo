@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   BookOpen, 
   FileText, 
@@ -26,66 +26,63 @@ interface ClienteDocumentos {
 }
 
 export default function AdminKnowledgePage() {
-  const [clientesDocumentos] = useState<ClienteDocumentos[]>([
-    {
-      clienteId: 'techcorp',
-      clienteNombre: 'TechCorp Solutions',
-      documentos: [
-        {
-          id: '1',
-          titulo: 'Manual de Agentes de Llamadas',
-          tipo: 'pdf',
-          tamaño: '2.4 MB',
-          fechaSubida: '2024-01-15',
-          categoria: 'Llamadas'
-        },
-        {
-          id: '2',
-          titulo: 'Guía de Configuración',
-          tipo: 'word',
-          tamaño: '1.8 MB',
-          fechaSubida: '2024-01-12',
-          categoria: 'Configuración'
+  const [clientesDocumentos, setClientesDocumentos] = useState<ClienteDocumentos[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
+  const [uploadMsg, setUploadMsg] = useState<Record<string, string>>({})
+
+  const formatBytes = (bytes: number) => {
+    if (!bytes || bytes <= 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+  }
+
+  const mapExtToTipo = (name: string): 'pdf' | 'word' | 'markdown' => {
+    const lower = name.toLowerCase()
+    if (lower.endsWith('.pdf')) return 'pdf'
+    if (lower.endsWith('.doc') || lower.endsWith('.docx')) return 'word'
+    return 'markdown'
+  }
+
+  useEffect(() => {
+    const loadClientes = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await fetch('/api/clientes')
+        const data = await res.json()
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Error al cargar clientes')
         }
-      ]
-    },
-    {
-      clienteId: 'innovacorp',
-      clienteNombre: 'InnovaCorp',
-      documentos: [
-        {
-          id: '3',
-          titulo: 'Manual de Usuario Chat',
-          tipo: 'pdf',
-          tamaño: '1.2 MB',
-          fechaSubida: '2024-01-10',
-          categoria: 'Chat'
-        },
-        {
-          id: '4',
-          titulo: 'Automatizaciones Personalizadas',
-          tipo: 'markdown',
-          tamaño: '856 KB',
-          fechaSubida: '2024-01-08',
-          categoria: 'Automatizaciones'
-        }
-      ]
-    },
-    {
-      clienteId: 'startupxyz',
-      clienteNombre: 'StartupXYZ',
-      documentos: [
-        {
-          id: '5',
-          titulo: 'Guía de Inicio Rápido',
-          tipo: 'pdf',
-          tamaño: '950 KB',
-          fechaSubida: '2024-01-05',
-          categoria: 'Introducción'
-        }
-      ]
+        const mapped: ClienteDocumentos[] = (data.clientes || []).map((c: any) => ({
+          clienteId: String(c.id),
+          clienteNombre: c.nombreEmpresa || 'Sin nombre',
+          documentos: [] // Se pueden cargar documentos reales más adelante
+        }))
+        // Orden alfabético por nombre para mejor UX
+        mapped.sort((a, b) => a.clienteNombre.localeCompare(b.clienteNombre, 'es'))
+        setClientesDocumentos(mapped)
+      } catch (e: any) {
+        setError(e?.message || 'Error desconocido')
+      } finally {
+        setLoading(false)
+      }
     }
-  ])
+    loadClientes()
+  }, [])
+
+  // Load files for each client if not loaded yet
+  useEffect(() => {
+    if (!clientesDocumentos || clientesDocumentos.length === 0) return
+    clientesDocumentos.forEach(c => {
+      if ((c.documentos || []).length === 0) {
+        refreshClienteFiles(c.clienteId)
+      }
+    })
+  }, [clientesDocumentos])
 
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -119,6 +116,74 @@ export default function AdminKnowledgePage() {
   const totalDocumentos = clientesDocumentos.reduce((total, cliente) => total + cliente.documentos.length, 0)
   const totalClientes = clientesDocumentos.length
 
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, clienteId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = Array.from(e.dataTransfer.files || [])
+    if (files.length === 0) return
+    await uploadFiles(clienteId, files)
+  }
+
+  const handleSelectFiles = async (e: React.ChangeEvent<HTMLInputElement>, clienteId: string) => {
+    // Capture the input element BEFORE any await
+    const inputEl = e.currentTarget
+    const files = Array.from(inputEl.files || [])
+    if (files.length === 0) return
+    await uploadFiles(clienteId, files)
+    // reset input safely after await
+    try {
+      inputEl.value = ''
+    } catch {}
+  }
+
+  const uploadFiles = async (clienteId: string, files: File[]) => {
+    try {
+      setUploading(prev => ({ ...prev, [clienteId]: true }))
+      setUploadMsg(prev => ({ ...prev, [clienteId]: '' }))
+
+      const form = new FormData()
+      form.append('clienteId', clienteId)
+      for (const f of files) {
+        form.append('files', f, f.name)
+      }
+
+      const res = await fetch('/api/admin/knowledge/upload', {
+        method: 'POST',
+        body: form
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Error al subir archivos')
+      }
+
+      setUploadMsg(prev => ({ ...prev, [clienteId]: `Subidos ${json.saved?.length || files.length} archivo(s)` }))
+
+      // Refresh list from disk
+      await refreshClienteFiles(clienteId)
+    } catch (e: any) {
+      setUploadMsg(prev => ({ ...prev, [clienteId]: e?.message || 'Error al subir' }))
+    } finally {
+      setUploading(prev => ({ ...prev, [clienteId]: false }))
+    }
+  }
+
+  const refreshClienteFiles = async (clienteId: string) => {
+    try {
+      const res = await fetch(`/api/admin/knowledge/files?clienteId=${encodeURIComponent(clienteId)}`)
+      const json = await res.json()
+      if (!res.ok || !json.success) return
+      const docs: Documento[] = (json.files || []).map((f: any, idx: number) => ({
+        id: `${clienteId}-${idx}-${f.name}`,
+        titulo: f.name,
+        tipo: mapExtToTipo(f.name),
+        tamaño: formatBytes(Number(f.size) || 0),
+        fechaSubida: f.modifiedAt ? new Date(f.modifiedAt).toISOString().slice(0, 10) : '',
+        categoria: 'Archivo'
+      }))
+      setClientesDocumentos(prev => prev.map(c => c.clienteId === clienteId ? { ...c, documentos: docs } : c))
+    } catch {}
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -133,6 +198,18 @@ export default function AdminKnowledgePage() {
 
       {/* Content */}
       <div className="px-8 py-8">
+        {/* Loading / Error States */}
+        {loading && (
+          <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-gray-600">
+            Cargando clientes...
+          </div>
+        )}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+            {error}
+          </div>
+        )}
+
         {/* Search Bar */}
         <div className="mb-8">
           <div className="relative w-full">
@@ -177,7 +254,7 @@ export default function AdminKnowledgePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Promedio por Cliente</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{Math.round(totalDocumentos / totalClientes)}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{totalClientes ? Math.round(totalDocumentos / totalClientes) : 0}</p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center">
                 <Upload className="h-6 w-6 text-purple-600" />
@@ -217,6 +294,37 @@ export default function AdminKnowledgePage() {
                   </div>
                   <div className="text-sm text-gray-400">
                     ID: {cliente.clienteId}
+                  </div>
+                </div>
+
+                {/* Drag & Drop uploader */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+                  onDrop={(e) => handleDrop(e, cliente.clienteId)}
+                  className="mb-6 border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Arrastra y suelta archivos aquí o
+                      <label className="ml-1 text-blue-600 underline cursor-pointer">
+                        selecciona
+                        <input
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => handleSelectFiles(e, cliente.clienteId)}
+                        />
+                      </label>
+                    </div>
+                    <div className="text-sm">
+                      {uploading[cliente.clienteId] ? (
+                        <span className="text-gray-500">Subiendo...</span>
+                      ) : (
+                        <span className={`text-${uploadMsg[cliente.clienteId]?.toLowerCase().includes('error') ? 'red' : 'green'}-600`}>
+                          {uploadMsg[cliente.clienteId] || ''}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
