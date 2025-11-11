@@ -17,6 +17,8 @@ export default function DashboardBase() {
   const [viewMode, setViewMode] = useState<'normal' | 'ml'>('normal');
   const [mlScenario, setMlScenario] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
   
   // Filter states
   const [selectedLanguage, setSelectedLanguage] = useState('all');
@@ -24,19 +26,62 @@ export default function DashboardBase() {
   const [selectedDateRange, setSelectedDateRange] = useState('Hoy');
   
   // Filtered dashboard data
-  const [dashboardData, setDashboardData] = useState(() => 
+  const [dashboardData, setDashboardData] = useState<any>(() => 
     getFilteredData('Hoy', '', 'all')
   );
 
-  // Update data when filters change
+  // Fetch real data from API
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoadingData(true);
+      setDataError(null);
+      
+      const response = await fetch('/api/n8n-dashboard/data?clienteId=13');
+      if (!response.ok) {
+        throw new Error('Error al cargar datos');
+      }
+      
+      const data = await response.json();
+      console.log('📊 Real data loaded:', data);
+      
+      // Transform API data to match dashboard format
+      setDashboardData({
+        ...data,
+        // Ensure all required fields exist
+        callEvolutionData: data.callEvolutionData || [],
+        sentimentData: data.sentimentData || [],
+        disconnectReasonsData: data.disconnectReasonsData || [],
+        agentPerformanceData: data.agentPerformanceData || [],
+        costPerConversionData: data.costPerConversionData || []
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setDataError('Error al cargar los datos. Usando datos de ejemplo.');
+      // Fallback to mock data
+      const filteredData = getFilteredData(selectedDateRange, selectedCampaign, selectedLanguage);
+      setDashboardData(filteredData);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  // Load data on mount
   useEffect(() => {
-    const filteredData = getFilteredData(selectedDateRange, selectedCampaign, selectedLanguage);
-    setDashboardData(filteredData);
-    
-    // Log filter statistics for validation
-    const stats = getFilterStatistics(selectedDateRange, selectedCampaign, selectedLanguage);
-    console.log('📊 Filter Applied:', stats);
-  }, [selectedDateRange, selectedCampaign, selectedLanguage]);
+    fetchDashboardData();
+  }, []);
+
+  // Update data when filters change (for now, just use mock data for filters)
+  useEffect(() => {
+    if (!isLoadingData && dataError) {
+      // Only use filtered mock data if real data failed
+      const filteredData = getFilteredData(selectedDateRange, selectedCampaign, selectedLanguage);
+      setDashboardData(filteredData);
+      
+      // Log filter statistics for validation
+      const stats = getFilterStatistics(selectedDateRange, selectedCampaign, selectedLanguage);
+      console.log('📊 Filter Applied:', stats);
+    }
+  }, [selectedDateRange, selectedCampaign, selectedLanguage, isLoadingData, dataError]);
 
   const handleMLAnalysis = () => {
     setIsAnalyzing(true);
@@ -99,6 +144,15 @@ export default function DashboardBase() {
                   <span className="text-sm font-medium text-green-700">En vivo</span>
                 </div>
               </div>
+              <button
+                onClick={fetchDashboardData}
+                disabled={isLoadingData}
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className={`w-4 h-4 text-gray-600 ${isLoadingData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
             </div>
           </div>
           
@@ -145,6 +199,29 @@ export default function DashboardBase() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        
+        {/* Loading State */}
+        {isLoadingData && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando datos del dashboard...</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Error Message */}
+        {dataError && !isLoadingData && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start">
+            <svg className="w-5 h-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-sm text-yellow-800">{dataError}</p>
+          </div>
+        )}
+        
+        {!isLoadingData && (
+          <>
         
         {/* ML Analysis View */}
         {viewMode === 'ml' && mlScenario && (
@@ -363,7 +440,7 @@ export default function DashboardBase() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-2xl font-bold text-gray-900">18.5s</p>
+            <p className="text-2xl font-bold text-gray-900">{dashboardData.avgCallDuration || 18.5}s</p>
             <p className="text-xs text-gray-500 mt-1">Por llamada</p>
           </div>
 
@@ -374,7 +451,7 @@ export default function DashboardBase() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <p className="text-2xl font-bold text-gray-900">4.2s</p>
+            <p className="text-2xl font-bold text-gray-900">{dashboardData.avgWaitTime || 4.2}s</p>
             <p className="text-xs text-gray-500 mt-1">Promedio de conexión</p>
           </div>
 
@@ -385,7 +462,7 @@ export default function DashboardBase() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <p className="text-2xl font-bold text-gray-900">15.3%</p>
+            <p className="text-2xl font-bold text-gray-900">{dashboardData.recontactRate || 15.3}%</p>
             <p className="text-xs text-gray-500 mt-1">Callbacks solicitados</p>
           </div>
 
@@ -396,7 +473,7 @@ export default function DashboardBase() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <p className="text-2xl font-bold text-gray-900">19.5%</p>
+            <p className="text-2xl font-bold text-gray-900">{dashboardData.interviewRate || 19.5}%</p>
             <p className="text-xs text-gray-500 mt-1">Conversión a entrevista</p>
           </div>
         </div>
@@ -417,6 +494,8 @@ export default function DashboardBase() {
           </div>
         </div>
         
+        </>
+        )}
         </>
         )}
 

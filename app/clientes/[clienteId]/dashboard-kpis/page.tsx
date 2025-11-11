@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { 
   Phone, 
@@ -62,6 +62,7 @@ export default function DashboardKPIsPage() {
   const [kpiDefinitions, setKpiDefinitions] = useState<KPIDefinition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const ingestTriggeredRef = useRef(false)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
   useEffect(() => {
@@ -83,6 +84,9 @@ export default function DashboardKPIsPage() {
           setDesignVariant(variant)
           console.log('🎨 Design variant loaded:', variant)
           console.log('🎨 Personalizacion:', data.cliente.personalizacion)
+
+          // Data ingestion removed - should be triggered manually or by webhook
+          // to avoid duplicate data on every dashboard load
           
           // Always create cliente object from API data (prefer API over static config)
           const clienteFromAPI: ClienteConfig = {
@@ -142,7 +146,7 @@ export default function DashboardKPIsPage() {
   const loadKPIs = async () => {
     // 🔥 FORCE MOCK DATA MODE FOR TESTING
     // Set this to true to always use mock data
-    const FORCE_MOCK_DATA = true
+    const FORCE_MOCK_DATA = false
     
     if (FORCE_MOCK_DATA) {
       console.log('🔥 FORCE MOCK DATA MODE ENABLED')
