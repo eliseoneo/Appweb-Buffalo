@@ -183,11 +183,12 @@ const Step2 = ({ formData, handlePersonalizacionChange, handleColorChange }: { f
             </label>
             <div className="space-y-3">
               {coloresPrincipales.map((color: string, index: number) => (
-                <div key={index} className="flex items-center space-x-3">
+                <div key={`color-${index}-${color}`} className="flex items-center space-x-3">
                   <div className="flex-shrink-0 w-24">
                     <span className="text-sm text-gray-700 font-medium">Color {index + 1}</span>
                   </div>
                   <ColorPicker
+                    key={`picker-${index}-${color}`}
                     color={color}
                     onChange={(newColor) => handleColorChange(index, newColor)}
                     label={`Color ${index + 1}`}
@@ -339,7 +340,7 @@ const Step4 = ({ formData, handleWebhookChange, getWebhookGroups }: { formData: 
                   </label>
                   <input
                     type="url"
-                    value={formData.webhooks[webhook.key as keyof typeof formData.webhooks]}
+                    value={formData.webhooks[webhook.key as keyof typeof formData.webhooks] as string}
                     onChange={(e) => handleWebhookChange(webhook.key, e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-buffalo-green focus:border-buffalo-green transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
                     placeholder={webhook.placeholder}
@@ -1571,11 +1572,14 @@ export default function CrearClientePage() {
       webhookLlamadasProbar: '',
       webhookLlamadasCampaña: '',
       webhookLlamadasDatabase: '',
+      webhookLlamadasJson: '',
       // Webhooks de Texto
       webhookTextoDashboard: '',
       webhookTextoDatabase: '',
+      webhookTextoJson: '',
       // Webhooks de Automatizaciones
-      webhookAutomatizacionesDashboard: ''
+      webhookAutomatizacionesDashboard: '',
+      webhookAutomatizacionesJson: ''
     },
     columnasPostgres: [] as any[]
   })
@@ -3243,7 +3247,8 @@ export default function CrearClientePage() {
           { key: 'webhookLlamadasDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/llamadas/dashboard' },
           { key: 'webhookLlamadasProbar', label: 'Webhook Probar', placeholder: 'https://api.ejemplo.com/webhook/llamadas/probar' },
           { key: 'webhookLlamadasCampaña', label: 'Webhook Campaña', placeholder: 'https://api.ejemplo.com/webhook/llamadas/campaña' },
-          { key: 'webhookLlamadasDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/llamadas/database' }
+          { key: 'webhookLlamadasDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/llamadas/database' },
+          { key: 'webhookLlamadasJson', label: 'Webhook JSON', placeholder: 'https://api.ejemplo.com/webhook/llamadas/json' }
         ]
       })
     }
@@ -3254,17 +3259,19 @@ export default function CrearClientePage() {
         icon: MessageSquare,
         webhooks: [
           { key: 'webhookTextoDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/texto/dashboard' },
-          { key: 'webhookTextoDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/texto/database' }
+          { key: 'webhookTextoDatabase', label: 'Webhook Database', placeholder: 'https://api.ejemplo.com/webhook/texto/database' },
+          { key: 'webhookTextoJson', label: 'Webhook JSON', placeholder: 'https://api.ejemplo.com/webhook/texto/json' }
         ]
       })
     }
     
-    if (formData.verticales.automatizaciones) {
+  if (formData.verticales.automatizaciones) {
       groups.push({
-        title: 'Webhooks de Automatizaciones',
+      title: 'Webhooks de Automatizaciones',
         icon: Bot,
         webhooks: [
-          { key: 'webhookAutomatizacionesDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/dashboard' }
+        { key: 'webhookAutomatizacionesDashboard', label: 'Webhook Dashboard', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/dashboard' },
+        { key: 'webhookAutomatizacionesJson', label: 'Webhook JSON', placeholder: 'https://api.ejemplo.com/webhook/automatizaciones/json' }
         ]
       })
     }

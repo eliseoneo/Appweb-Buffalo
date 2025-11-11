@@ -77,9 +77,16 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Determine webhook_url from 'Webhook Dashboard' fields
+    const webhooksObj = (body.webhooks as any) || {}
+    const dashboardWebhookUrl =
+      (typeof webhooksObj.webhookLlamadasDashboard === 'string' && webhooksObj.webhookLlamadasDashboard.trim() !== '' ? webhooksObj.webhookLlamadasDashboard.trim() : null) ??
+      (typeof webhooksObj.webhookTextoDashboard === 'string' && webhooksObj.webhookTextoDashboard.trim() !== '' ? webhooksObj.webhookTextoDashboard.trim() : null) ??
+      (typeof webhooksObj['webhookDashboard'] === 'string' && webhooksObj['webhookDashboard'].trim() !== '' ? webhooksObj['webhookDashboard'].trim() : null)
+
     const clienteResult = await client.query(
-      `INSERT INTO clientes (usuario_id, nombre_empresa, logo_empresa, tipo_cliente, partnership_id, personalizacion, activo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO clientes (usuario_id, nombre_empresa, logo_empresa, tipo_cliente, partnership_id, personalizacion, webhook_url, activo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
       [
         usuarioId,
@@ -88,6 +95,7 @@ export async function POST(request: NextRequest) {
         tipoClienteDb,
         partnershipId,
         body.personalizacion || null, // JSONB column accepts JavaScript objects directly
+        dashboardWebhookUrl,
         true
       ]
     )
@@ -102,28 +110,47 @@ export async function POST(request: NextRequest) {
         automatizaciones: 'automatizacion'
       }
 
+      // Build per-vertical webhook configuration (key/value)
+      const prefixMap: { [key: string]: string } = {
+        llamadas: 'webhookLlamadas',
+        texto: 'webhookTexto',
+        automatizaciones: 'webhookAutomatizaciones'
+      }
+
       for (const [verticalKey, verticalValue] of Object.entries(body.verticales)) {
-        if (verticalValue) {
-          const funcionalidadNombre = verticalMapping[verticalKey]
-          if (funcionalidadNombre) {
-            // Get funcionalidad_id by nombre
-            const funcionalidadResult = await client.query(
-              'SELECT id FROM funcionalidades WHERE nombre = $1',
-              [funcionalidadNombre]
-            )
-            
-            if (funcionalidadResult.rows.length > 0) {
-              const funcionalidadId = funcionalidadResult.rows[0].id
-              
-              await client.query(
-                `INSERT INTO cliente_funcionalidades (cliente_id, funcionalidad_id, habilitado, fecha_habilitacion)
-                 VALUES ($1, $2, $3, NOW())
-                 ON CONFLICT (cliente_id, funcionalidad_id) DO UPDATE
-                 SET habilitado = $3, fecha_habilitacion = NOW()`,
-                [clienteId, funcionalidadId, true]
-              )
+        if (!verticalValue) continue
+
+        const funcionalidadNombre = verticalMapping[verticalKey]
+        if (!funcionalidadNombre) continue
+
+        // Get funcionalidad_id by nombre
+        const funcionalidadResult = await client.query(
+          'SELECT id FROM funcionalidades WHERE nombre = $1',
+          [funcionalidadNombre]
+        )
+        
+        if (funcionalidadResult.rows.length > 0) {
+          const funcionalidadId = funcionalidadResult.rows[0].id
+          
+          // Collect config for this vertical
+          const prefix = prefixMap[verticalKey] || ''
+          const conf: any = {}
+          for (const [k, v] of Object.entries(webhooksObj)) {
+            if (typeof v !== 'string' || v.trim() === '') continue
+            // Include keys that match this vertical prefix, and generic JSON fields
+            if ((prefix && k.startsWith(prefix)) || k === 'webhookJson' || k === `${prefix}Json` || k.toLowerCase() === 'webhook-json') {
+              conf[k] = v
             }
           }
+
+          await client.query(
+            `INSERT INTO cliente_funcionalidades (cliente_id, funcionalidad_id, habilitado, fecha_habilitacion, configuracion)
+             VALUES ($1, $2, $3, NOW(), $4::jsonb)
+             ON CONFLICT (cliente_id, funcionalidad_id) DO UPDATE
+             SET habilitado = EXCLUDED.habilitado,
+                 configuracion = EXCLUDED.configuracion`,
+            [clienteId, funcionalidadId, true, JSON.stringify(conf)]
+          )
         }
       }
     }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface ColorPickerProps {
@@ -16,7 +17,10 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
   const [lightness, setLightness] = useState(50)
   const [rgb, setRgb] = useState({ r: 0, g: 200, b: 150 })
   const [hex, setHex] = useState('#00C896')
+  const [popupPosition, setPopupPosition] = useState<'bottom' | 'top'>('bottom')
+  const [popupCoords, setPopupCoords] = useState<{ top: number, left: number }>({ top: 0, left: 0 })
   const pickerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const gradientRef = useRef<HTMLDivElement>(null)
   const hueSliderRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -121,7 +125,26 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
     }
   }, [color])
 
-  // Update RGB and Hex when HSL changes (only if user is interacting, not during initialization)
+  // Re-initialize color when modal opens to ensure correct display
+  useEffect(() => {
+    if (isOpen && color) {
+      isInitializing.current = true
+      const hsl = hexToHsl(color)
+      setHue(hsl.h)
+      setSaturation(hsl.s)
+      setLightness(hsl.l)
+      const rgb = hslToRgb(hsl.h, hsl.s, hsl.l)
+      setRgb(rgb)
+      setHex(color)
+      lastColorRef.current = color
+      // Reset flag after state updates complete
+      setTimeout(() => {
+        isInitializing.current = false
+      }, 200)
+    }
+  }, [isOpen, color])
+
+  // Update RGB and Hex when HSL changes (only update internal preview, do NOT propagate yet)
   useEffect(() => {
     // Skip during initialization to prevent infinite loop
     if (isInitializing.current) {
@@ -135,12 +158,6 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
     if (newHex !== hex || newRgb.r !== rgb.r || newRgb.g !== rgb.g || newRgb.b !== rgb.b) {
       setRgb(newRgb)
       setHex(newHex)
-      
-      // Only call onChange if the new color is different from the prop and last sent value
-      if (newHex !== color && newHex !== lastColorRef.current) {
-        lastColorRef.current = newHex
-        onChange(newHex)
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hue, saturation, lightness])
@@ -149,7 +166,16 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
   const handleGradientMouseDown = (e: React.MouseEvent) => {
     if (!gradientRef.current) return
     isDragging.current = true
+    e.preventDefault()
     updateGradientColor(e)
+  }
+  const handleGradientMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current) return
+    e.preventDefault()
+    updateGradientColor(e)
+  }
+  const handleGradientMouseUp = () => {
+    isDragging.current = false
   }
 
   const updateGradientColor = (e: React.MouseEvent | MouseEvent) => {
@@ -165,7 +191,34 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
   // Handle hue slider click/drag
   const handleHueMouseDown = (e: React.MouseEvent) => {
     isDraggingHue.current = true
+    e.preventDefault()
     updateHue(e)
+  }
+  const handleHueMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingHue.current) return
+    e.preventDefault()
+    updateHue(e)
+  }
+  const handleHueMouseUp = () => {
+    isDraggingHue.current = false
+  }
+
+  // Touch support (mobile/tablet)
+  const updateGradientColorTouch = (e: React.TouchEvent) => {
+    if (!gradientRef.current) return
+    const rect = gradientRef.current.getBoundingClientRect()
+    const touch = e.touches[0] || e.changedTouches[0]
+    const x = Math.max(0, Math.min(rect.width, touch.clientX - rect.left))
+    const y = Math.max(0, Math.min(rect.height, touch.clientY - rect.top))
+    setSaturation(Math.round((x / rect.width) * 100))
+    setLightness(Math.round(100 - (y / rect.height) * 100))
+  }
+  const updateHueTouch = (e: React.TouchEvent) => {
+    if (!hueSliderRef.current) return
+    const rect = hueSliderRef.current.getBoundingClientRect()
+    const touch = e.touches[0] || e.changedTouches[0]
+    const x = Math.max(0, Math.min(rect.width, touch.clientX - rect.left))
+    setHue(Math.round((x / rect.width) * 360))
   }
 
   const updateHue = (e: React.MouseEvent | MouseEvent) => {
@@ -233,8 +286,6 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
     
     const newHex = rgbToHex(newRgb.r, newRgb.g, newRgb.b)
     setHex(newHex)
-    lastColorRef.current = newHex
-    onChange(newHex)
   }
 
   // Handle hex input change
@@ -247,24 +298,84 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
       setLightness(hsl.l)
       const rgb = hslToRgb(hsl.h, hsl.s, hsl.l)
       setRgb(rgb)
-      lastColorRef.current = value
-      onChange(value)
     } else if (value.length <= 7) {
       setHex(value)
     }
   }
 
+  // Apply selection to parent
+  const handleApply = () => {
+    onChange(hex)
+    lastColorRef.current = hex
+    setIsOpen(false)
+  }
+
+  const handleCancel = () => {
+    setIsOpen(false)
+  }
+
   // Close picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      // Check if click is outside both the picker modal and the container button
+      const clickedOutsidePicker = pickerRef.current && !pickerRef.current.contains(event.target as Node)
+      const clickedOutsideContainer = containerRef.current && !containerRef.current.contains(event.target as Node)
+      
+      // Only close if clicked outside both the picker and the container (button)
+      if (clickedOutsidePicker && clickedOutsideContainer) {
         setIsOpen(false)
       }
     }
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      // Use a small delay to allow mousedown events inside the modal to process first
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside)
+      }, 0)
       return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  // Calculate popup position based on available space (viewport) - using portal coordinates
+  useEffect(() => {
+    const computePosition = (measuredHeight?: number) => {
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const viewportWidth = window.innerWidth
+      const popupWidth = 320
+      const margin = 8
+      const estimatedHeight = measuredHeight ?? 460
+
+      // Decide top/bottom
+      const spaceBelow = viewportHeight - rect.bottom
+      const spaceAbove = rect.top
+      let top = rect.bottom + margin
+      let position: 'bottom' | 'top' = 'bottom'
+      if (spaceBelow < estimatedHeight + margin && spaceAbove > estimatedHeight + margin) {
+        top = rect.top - estimatedHeight - margin
+        position = 'top'
+      }
+
+      // Clamp left to viewport
+      let left = rect.left
+      if (left + popupWidth + margin > viewportWidth) {
+        left = viewportWidth - popupWidth - margin
+      }
+      if (left < margin) left = margin
+
+      setPopupPosition(position)
+      setPopupCoords({ top, left })
+    }
+
+    if (isOpen) {
+      computePosition()
+      // Recompute after first render to use real height
+      setTimeout(() => {
+        if (pickerRef.current) {
+          computePosition(pickerRef.current.offsetHeight)
+        }
+      }, 0)
     }
   }, [isOpen])
 
@@ -272,13 +383,16 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
   const gradientColor = hslToHex(hue, 100, 50)
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       {/* Color Display Button */}
       <div className="flex items-center space-x-3">
         <div className="flex-shrink-0">
           <button
             type="button"
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsOpen(!isOpen)
+            }}
             className="w-12 h-12 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-green-500 transition-colors"
             style={{ backgroundColor: color || '#00C896' }}
           />
@@ -293,12 +407,17 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
         </div>
       </div>
 
-      {/* Color Picker Popup */}
-      {isOpen && (
+      {/* Color Picker Popup (Portal to avoid clipping by overflow hidden parents) */}
+      {isOpen && createPortal(
         <div
           ref={pickerRef}
-          className="absolute z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 mt-2"
-          style={{ width: '320px', left: '0', top: '100%' }}
+          className="fixed z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-6"
+          style={{
+            width: 320,
+            left: popupCoords.left,
+            top: popupCoords.top
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -335,7 +454,29 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
               background: `linear-gradient(to right, white, ${gradientColor}), linear-gradient(to bottom, transparent, black)`,
               backgroundBlendMode: 'multiply'
             }}
-            onMouseDown={handleGradientMouseDown}
+            onMouseDown={(e) => {
+              e.stopPropagation()
+              handleGradientMouseDown(e)
+            }}
+            onMouseMove={(e) => {
+              e.stopPropagation()
+              handleGradientMouseMove(e)
+            }}
+            onMouseUp={(e) => {
+              e.stopPropagation()
+              handleGradientMouseUp()
+            }}
+            onMouseLeave={handleGradientMouseUp}
+            onTouchStart={(e) => {
+              e.stopPropagation()
+              isDragging.current = true
+              updateGradientColorTouch(e)
+            }}
+            onTouchMove={(e) => {
+              e.stopPropagation()
+              updateGradientColorTouch(e)
+            }}
+            onTouchEnd={() => { isDragging.current = false }}
           >
             {/* Saturation/Lightness Indicator */}
             <div
@@ -355,7 +496,29 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
               style={{
                 background: 'linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)'
               }}
-              onMouseDown={handleHueMouseDown}
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                handleHueMouseDown(e)
+              }}
+              onMouseMove={(e) => {
+                e.stopPropagation()
+                handleHueMouseMove(e)
+              }}
+              onMouseUp={(e) => {
+                e.stopPropagation()
+                handleHueMouseUp()
+              }}
+              onMouseLeave={handleHueMouseUp}
+              onTouchStart={(e) => {
+                e.stopPropagation()
+                isDraggingHue.current = true
+                updateHueTouch(e)
+              }}
+              onTouchMove={(e) => {
+                e.stopPropagation()
+                updateHueTouch(e)
+              }}
+              onTouchEnd={() => { isDraggingHue.current = false }}
             >
               {/* Hue Indicator */}
               <div
@@ -367,52 +530,27 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
             </div>
           </div>
 
-          {/* RGB Inputs */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div>
-              <input
-                type="number"
-                min="0"
-                max="255"
-                value={rgb.r}
-                onChange={(e) => handleRgbChange('r', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-              <label className="block text-xs text-gray-500 text-center mt-1">R</label>
-            </div>
-            <div>
-              <input
-                type="number"
-                min="0"
-                max="255"
-                value={rgb.g}
-                onChange={(e) => handleRgbChange('g', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-              <label className="block text-xs text-gray-500 text-center mt-1">G</label>
-            </div>
-            <div>
-              <input
-                type="number"
-                min="0"
-                max="255"
-                value={rgb.b}
-                onChange={(e) => handleRgbChange('b', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-              <label className="block text-xs text-gray-500 text-center mt-1">B</label>
-            </div>
-          </div>
+          {/* RGB Inputs removed to prioritize action buttons */}
 
-          {/* Preview */}
-          <div className="pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-600 mb-2">Vista previa:</p>
-            <div
-              className="w-full h-16 rounded-lg border-2 border-gray-200"
-              style={{ backgroundColor: currentColor }}
-            />
+          {/* Actions */}
+          <div className="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleApply}
+              className="px-3 py-2 text-sm rounded-lg bg-buffalo-green text-white hover:bg-buffalo-green/90"
+            >
+              Seleccionar
+            </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

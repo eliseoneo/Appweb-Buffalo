@@ -30,6 +30,7 @@ export async function GET(
           c.logo_empresa,
           c.activo,
           c.personalizacion,
+          c.webhook_url,
           u.username,
           p.id as partnership_id,
           p.nombre as partnership_nombre
@@ -49,6 +50,7 @@ export async function GET(
           c.logo_empresa,
           c.activo,
           c.personalizacion,
+          c.webhook_url,
           u.username,
           p.id as partnership_id,
           p.nombre as partnership_nombre
@@ -90,6 +92,7 @@ export async function GET(
         logo: row.logo_empresa || '',
         partnership: row.partnership_nombre || undefined,
         partnership_id: row.partnership_id || undefined,
+        webhook_url: row.webhook_url || null,
         personalizacion: personalizacion,
         colorPrincipal: colorPrincipal
       }
