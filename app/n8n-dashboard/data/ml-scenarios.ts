@@ -118,9 +118,21 @@ function generatePredictionTrend(
 /**
  * Generate ML scenario data based on type and context
  */
-export function generateMLScenario(scenario: MLScenario, context?: { dateRange?: string, totalCalls?: number }) {
+export function generateMLScenario(
+  scenario: MLScenario,
+  context?: { dateRange?: string, totalCalls?: number },
+  callData?: any
+) {
   const dateRange = context?.dateRange || 'Últimos 30 días';
-  const totalCalls = context?.totalCalls || 2847;
+  const totalCalls = context?.totalCalls || callData?.totalCallsData?.total || 2847;
+
+  // Pull real metrics from callData when available
+  const responseRate = callData?.responseRateData?.responseRate ?? 77.2;
+  const avgCostPerCall = callData?.totalCostData?.averageCostPerCall ?? 0.05;
+  const posEntry = Array.isArray(callData?.sentimentData)
+    ? callData.sentimentData.find((s: any) => s.name === 'Positivo')
+    : null;
+  const positivePct = posEntry?.percentage ?? 68.5;
   
   // Adjust prediction timeframe based on date range
   const isShortTerm = ['Hoy', 'Ayer'].includes(dateRange);
@@ -137,7 +149,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'satisfaction-excellent',
           titulo: 'Satisfacción del Cliente',
-          valor: '85.2%',
+          valor: `${positivePct.toFixed(1)}%`,
           descripcion: '🎉 ML: Excelente nivel de satisfacción - mantener estrategia actual',
           tipo: 'metric' as const,
           relevancia: 100,
@@ -149,9 +161,9 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         },
         {
           id: 'conversion-excellent',
-          titulo: 'Tasa de Conversión',
-          valor: '35.8%',
-          descripcion: '🚀 ML: Conversión excepcional - supera benchmarks de industria',
+          titulo: 'Tasa de Respuesta',
+          valor: `${Math.round(responseRate)}%`,
+          descripcion: '🚀 ML: Respuesta excepcional - supera benchmarks de industria',
           tipo: 'metric' as const,
           relevancia: 98,
           categoria: 'Conversión',
@@ -175,7 +187,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'cost-efficiency',
           titulo: 'Eficiencia de Costos',
-          valor: '€0.045',
+          valor: `€${avgCostPerCall.toFixed(3)}`,
           descripcion: '💰 ML: Costo por llamada muy competitivo',
           tipo: 'metric' as const,
           relevancia: 85,
@@ -194,8 +206,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
       ],
       predictionData: {
         calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 1.24), 'up'),
-        conversion: generatePredictionTrend(predictionDays, 35.8, 38.2, 'up'),
-        satisfaction: generatePredictionTrend(predictionDays, 85.2, 87.5, 'up')
+        conversion: generatePredictionTrend(predictionDays, Math.max(10, Math.round(responseRate * 0.4)), Math.max(10, Math.round(responseRate * 0.45)), 'up'),
+        satisfaction: generatePredictionTrend(predictionDays, positivePct, Math.min(100, positivePct + 2.5), 'up')
       },
       problemConcentration: [
         { category: 'Calidad de Script', problems: 2, severity: 'low' as const },
@@ -217,7 +229,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'satisfaction-warning',
           titulo: 'Satisfacción del Cliente',
-          valor: '58.3%',
+          valor: `${positivePct.toFixed(1)}%`,
           descripcion: '⚠️ ML: Satisfacción por debajo del objetivo (70%) - acción requerida',
           tipo: 'alert' as const,
           relevancia: 100,
@@ -229,8 +241,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         },
         {
           id: 'conversion-declining',
-          titulo: 'Tasa de Conversión',
-          valor: '14.2%',
+          titulo: 'Tasa de Respuesta',
+          valor: `${Math.round(responseRate)}%`,
           descripcion: '📉 ML: Conversión en descenso - revisar scripts y capacitación',
           tipo: 'alert' as const,
           relevancia: 98,
@@ -243,7 +255,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'cost-rising',
           titulo: 'Costo por Llamada',
-          valor: '€0.125',
+          valor: `€${avgCostPerCall.toFixed(3)}`,
           descripcion: '💸 ML: Costos aumentando - optimizar duración de llamadas',
           tipo: 'recommendation' as const,
           relevancia: 95,
@@ -262,8 +274,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
       ],
       predictionData: {
         calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 0.86), 'down'),
-        conversion: generatePredictionTrend(predictionDays, 14.2, 12.0, 'down'),
-        satisfaction: generatePredictionTrend(predictionDays, 58.3, 52.0, 'down')
+        conversion: generatePredictionTrend(predictionDays, Math.max(5, Math.round(responseRate * 0.3)), Math.max(5, Math.round(responseRate * 0.25)), 'down'),
+        satisfaction: generatePredictionTrend(predictionDays, positivePct, Math.max(0, positivePct - 6.3), 'down')
       },
       problemConcentration: [
         { category: 'Calidad de Servicio', problems: 18, severity: 'high' as const },
@@ -287,7 +299,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'satisfaction-critical',
           titulo: 'Satisfacción del Cliente',
-          valor: '32.1%',
+          valor: `${positivePct.toFixed(1)}%`,
           descripcion: '🚨 ML: CRÍTICO - Satisfacción muy baja - intervención inmediata',
           tipo: 'alert' as const,
           relevancia: 100,
@@ -299,8 +311,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         },
         {
           id: 'conversion-critical',
-          titulo: 'Tasa de Conversión',
-          valor: '4.8%',
+          titulo: 'Tasa de Respuesta',
+          valor: `${Math.round(responseRate)}%`,
           descripcion: '🚨 ML: CRÍTICO - Conversión colapsando - revisar todo el proceso',
           tipo: 'alert' as const,
           relevancia: 100,
@@ -332,8 +344,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
       ],
       predictionData: {
         calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 0.69), 'down'),
-        conversion: generatePredictionTrend(predictionDays, 4.8, 2.5, 'down'),
-        satisfaction: generatePredictionTrend(predictionDays, 32.1, 18.0, 'down')
+        conversion: generatePredictionTrend(predictionDays, Math.max(2, Math.round(responseRate * 0.15)), Math.max(1, Math.round(responseRate * 0.08)), 'down'),
+        satisfaction: generatePredictionTrend(predictionDays, positivePct, Math.max(0, positivePct - 14.1), 'down')
       },
       problemConcentration: [
         { category: 'Calidad de Servicio', problems: 52, severity: 'high' as const },
@@ -357,7 +369,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'growth-opportunity',
           titulo: 'Oportunidad de Crecimiento',
-          valor: '+45.2%',
+          valor: `${(Math.min(60, Math.max(10, responseRate / 2))).toFixed(1)}%`,
           descripcion: '🚀 ML: Crecimiento explosivo - escalar operaciones AHORA',
           tipo: 'trend' as const,
           relevancia: 100,
@@ -401,8 +413,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
       ],
       predictionData: {
         calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 1.42), 'up'),
-        conversion: generatePredictionTrend(predictionDays, 26.8, 28.5, 'up'),
-        satisfaction: generatePredictionTrend(predictionDays, 72.0, 75.0, 'up')
+        conversion: generatePredictionTrend(predictionDays, Math.max(8, Math.round(responseRate * 0.35)), Math.max(9, Math.round(responseRate * 0.38)), 'up'),
+        satisfaction: generatePredictionTrend(predictionDays, positivePct, Math.min(100, positivePct + 3.0), 'up')
       },
       problemConcentration: [
         { category: 'Capacidad Insuficiente', problems: 42, severity: 'high' as const },
@@ -425,7 +437,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'volume-decline',
           titulo: 'Caída de Volumen',
-          valor: '-28.4%',
+          valor: `${(Math.min(-5, Math.round((responseRate - 50) / 2))).toString()}%`,
           descripcion: '📉 ML: Declive significativo - investigar causas raíz',
           tipo: 'alert' as const,
           relevancia: 100,
@@ -457,8 +469,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
       ],
       predictionData: {
         calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 0.665), 'down'),
-        conversion: generatePredictionTrend(predictionDays, 12.5, 8.2, 'down'),
-        satisfaction: generatePredictionTrend(predictionDays, 51.2, 38.0, 'down')
+        conversion: generatePredictionTrend(predictionDays, Math.max(5, Math.round(responseRate * 0.25)), Math.max(4, Math.round(responseRate * 0.16)), 'down'),
+        satisfaction: generatePredictionTrend(predictionDays, positivePct, Math.max(0, positivePct - 13.2), 'down')
       },
       problemConcentration: [
         { category: 'Pérdida de Clientes', problems: 35, severity: 'high' as const },
@@ -482,7 +494,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'total-balanced',
           titulo: 'Total de Llamadas',
-          valor: '2,847',
+          valor: totalCalls.toLocaleString('es-ES'),
           descripcion: 'ML: Volumen estable y predecible',
           tipo: 'metric' as const,
           relevancia: 100,
@@ -494,7 +506,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'satisfaction-balanced',
           titulo: 'Satisfacción del Cliente',
-          valor: '68.5%',
+          valor: `${positivePct.toFixed(1)}%`,
           descripcion: '✅ ML: Nivel aceptable - oportunidad de mejora a 75%',
           tipo: 'metric' as const,
           relevancia: 90,
@@ -506,7 +518,7 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
         {
           id: 'response-rate',
           titulo: 'Tasa de Respuesta',
-          valor: '77.2%',
+          valor: `${Math.round(responseRate)}%`,
           descripcion: 'ML: Buena tasa de respuesta - optimizable a 85%',
           tipo: 'metric' as const,
           relevancia: 88,
@@ -537,8 +549,8 @@ export function generateMLScenario(scenario: MLScenario, context?: { dateRange?:
       ],
       predictionData: {
         calls: generatePredictionTrend(predictionDays, totalCalls, Math.round(totalCalls * 1.026), 'stable'),
-        conversion: generatePredictionTrend(predictionDays, 18.2, 19.5, 'up'),
-        satisfaction: generatePredictionTrend(predictionDays, 68.5, 72.0, 'up')
+        conversion: generatePredictionTrend(predictionDays, Math.max(7, Math.round(responseRate * 0.3)), Math.max(8, Math.round(responseRate * 0.32)), 'up'),
+        satisfaction: generatePredictionTrend(predictionDays, positivePct, Math.min(100, positivePct + 3.5), 'up')
       },
       problemConcentration: [
         { category: 'Optimización de Scripts', problems: 10, severity: 'medium' as const },

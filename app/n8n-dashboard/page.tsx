@@ -36,7 +36,16 @@ export default function DashboardBase() {
       setIsLoadingData(true);
       setDataError(null);
       
-      const response = await fetch('/api/n8n-dashboard/data?clienteId=13');
+      // Determine clienteId from URL or localStorage (fallback to 14 for dev)
+      let clienteId = '14';
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const fromQuery = params.get('clienteId');
+        const fromStorage = localStorage.getItem('clienteId');
+        clienteId = (fromQuery || fromStorage || '14').toString();
+      } catch {}
+
+      const response = await fetch(`/api/n8n-dashboard/data?clienteId=${encodeURIComponent(clienteId)}`);
       if (!response.ok) {
         throw new Error('Error al cargar datos');
       }
@@ -94,7 +103,7 @@ export default function DashboardBase() {
       };
       
       const detectedScenario = analyzeDataAndSelectScenario(dashboardData, context);
-      const mlData = generateMLScenario(detectedScenario, context);
+      const mlData = generateMLScenario(detectedScenario, context, dashboardData);
       
       setMlScenario(mlData);
       setViewMode('ml');
@@ -356,19 +365,46 @@ export default function DashboardBase() {
             }
           />
           
-          <StatCard
-            title="Tasa de Respuesta"
-            value={`${dashboardData.responseRateData.responseRate}%`}
-            subtitle={`${dashboardData.responseRateData.answeredCalls} de ${dashboardData.responseRateData.totalCalls} llamadas respondidas`}
-            trend="up"
-            trendValue="Excelente rendimiento"
-            color="green"
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          {(() => {
+            const rr = Number(dashboardData.responseRateData?.responseRate || 0);
+            let rateLabel = 'En riesgo';
+            let rateTrend: 'up' | 'down' | 'neutral' = 'down';
+            let rateColor: 'blue' | 'green' | 'purple' | 'orange' | 'red' = 'red';
+
+            if (rr >= 85) {
+              rateLabel = 'Excelente rendimiento';
+              rateTrend = 'up';
+              rateColor = 'green';
+            } else if (rr >= 60) {
+              rateLabel = 'Buen rendimiento';
+              rateTrend = 'neutral';
+              rateColor = 'blue';
+            } else if (rr >= 40) {
+              rateLabel = 'Mejorable';
+              rateTrend = 'down';
+              rateColor = 'orange';
+            } else {
+              rateLabel = 'En riesgo';
+              rateTrend = 'down';
+              rateColor = 'red';
             }
-          />
+
+            return (
+              <StatCard
+                title="Tasa de Respuesta"
+                value={`${rr}%`}
+                subtitle={`${dashboardData.responseRateData.answeredCalls} de ${dashboardData.responseRateData.totalCalls} llamadas respondidas`}
+                trend={rateTrend}
+                trendValue={rateLabel}
+                color={rateColor}
+                icon={
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+              />
+            );
+          })()}
           
           <StatCard
             title="Costo Total"

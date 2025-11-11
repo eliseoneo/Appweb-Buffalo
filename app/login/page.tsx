@@ -50,6 +50,9 @@ export default function LoginPage() {
             return
           }
           console.log('🔗 Redirigiendo a:', `/clientes/${clienteId}/dashboard`)
+          try {
+            localStorage.setItem('clienteId', String(clienteId))
+          } catch {}
           window.location.href = `/clientes/${clienteId}/dashboard`
         }
       } else {

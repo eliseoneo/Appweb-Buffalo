@@ -4,7 +4,11 @@ import { query } from '@/lib/database'
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const clienteId = searchParams.get('clienteId') || '13' // Default to cliente 13 for n8n-dashboard
+    const clienteId = searchParams.get('clienteId')
+
+    if (!clienteId) {
+      return NextResponse.json({ error: 'clienteId es requerido' }, { status: 400 })
+    }
     
     // Prefer explicit mapping on clientes.tabla_cliente
     await query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS tabla_cliente VARCHAR(250)`)
@@ -75,19 +79,35 @@ export async function GET(request: Request) {
     const sentimentAggregated: Record<string, number> = {}
     const disconnectAggregated: Record<string, number> = {}
     const dateAggregated: Record<string, number> = {}
+    const waitTimeAggregated: Record<string, number> = {}
     
     for (const row of dataResult.rows) {
       const payload = row.payload
       
-      // Aggregate basic metrics
-      if (payload.total_llamada_realizada) {
-        totalCalls += payload.total_llamada_realizada
+      // Aggregate basic metrics from normalized fields
+      if (payload.total_llamadas_realizadas != null) {
+        const v = typeof payload.total_llamadas_realizadas === 'string'
+          ? parseFloat(payload.total_llamadas_realizadas)
+          : Number(payload.total_llamadas_realizadas)
+        totalCalls += isNaN(v) ? 0 : v
       }
-      if (payload.total_tiempo_llamada) {
-        totalTime += payload.total_tiempo_llamada
+      if (payload.total_tiempo_llamadas_segundos != null) {
+        const v = typeof payload.total_tiempo_llamadas_segundos === 'string'
+          ? parseFloat(payload.total_tiempo_llamadas_segundos)
+          : Number(payload.total_tiempo_llamadas_segundos)
+        totalTime += isNaN(v) ? 0 : v
       }
-      if (payload.total_conversacion_sostenidas) {
-        totalConversations += payload.total_conversacion_sostenidas
+      if (payload.total_conversacion_sostenidas_segundo != null) {
+        if (typeof payload.total_conversacion_sostenidas_segundo === 'object' && payload.total_conversacion_sostenidas_segundo !== null) {
+          const val = (payload.total_conversacion_sostenidas_segundo as any).valor
+          const v = typeof val === 'string' ? parseFloat(val) : Number(val)
+          totalConversations += isNaN(v) ? 0 : v
+        } else {
+          const v = typeof payload.total_conversacion_sostenidas_segundo === 'string'
+            ? parseFloat(payload.total_conversacion_sostenidas_segundo)
+            : Number(payload.total_conversacion_sostenidas_segundo)
+          totalConversations += isNaN(v) ? 0 : v
+        }
       }
       
       // Aggregate sentiment data
@@ -104,19 +124,42 @@ export async function GET(request: Request) {
         }
       }
       
-      // Aggregate dates
-      if (payload.listado_fecha_hora && typeof payload.listado_fecha_hora === 'object') {
-        for (const [date, count] of Object.entries(payload.listado_fecha_hora)) {
+      // Aggregate dates (from total_llamadas_fecha)
+      if (payload.total_llamadas_fecha && typeof payload.total_llamadas_fecha === 'object') {
+        for (const [date, count] of Object.entries(payload.total_llamadas_fecha)) {
           dateAggregated[date] = (dateAggregated[date] || 0) + (count as number)
+        }
+      }
+
+      // Aggregate wait time per date (from total_tiempo_espera_fecha)
+      if (payload.total_tiempo_espera_fecha && typeof payload.total_tiempo_espera_fecha === 'object') {
+        for (const [date, sec] of Object.entries(payload.total_tiempo_espera_fecha)) {
+          const v = typeof sec === 'string' ? parseFloat(sec) : Number(sec)
+          waitTimeAggregated[date] = (waitTimeAggregated[date] || 0) + (isNaN(v) ? 0 : v)
         }
       }
     }
     
     // Calculate derived metrics
     const avgCallDuration = totalCalls > 0 ? totalTime / totalCalls : 0
-    const responseRate = totalCalls > 0 ? (totalConversations / totalCalls) * 100 : 0
+
+    // Derive answered calls from disconnect reasons (exclude no-answer types)
+    const answeredCalls =
+      Object.entries(disconnectAggregated).reduce((sum, [reason, count]) => {
+        const r = reason.toLowerCase()
+        const isNoAnswer = r.includes('no hay respuesta') || r.includes('ocupado')
+        return sum + (isNoAnswer ? 0 : (count as number))
+      }, 0) || 0
+
+    const responseRate = totalCalls > 0 ? (answeredCalls / totalCalls) * 100 : 0
     const avgCostPerCall = 0.05 // Mock cost per call
     const totalCost = totalCalls * avgCostPerCall
+
+    // Average wait time from aggregated per-date values
+    const waitValues = Object.values(waitTimeAggregated)
+    const avgWaitTime = waitValues.length > 0
+      ? (waitValues.reduce((a, b) => a + b, 0) / waitValues.length)
+      : 0
     
     // Format sentiment data
     const sentimentTotal = Object.values(sentimentAggregated).reduce((sum, val) => sum + val, 0)
@@ -175,7 +218,7 @@ export async function GET(request: Request) {
         percentageChange: 15
       },
       responseRateData: {
-        answeredCalls: totalConversations,
+        answeredCalls,
         totalCalls,
         responseRate: Math.round(responseRate),
         trend: 'up'
@@ -194,7 +237,7 @@ export async function GET(request: Request) {
       costPerConversionData,
       // Additional metrics
       avgCallDuration: Math.round(avgCallDuration),
-      avgWaitTime: 4.2, // Mock
+      avgWaitTime: Math.round(avgWaitTime * 100) / 100,
       recontactRate: 15.3, // Mock
       interviewRate: 19.5 // Mock
     }
